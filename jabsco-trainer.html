@@ -8,24 +8,22 @@
 :root {
   --bilge: #E2C601;
   --flow-ok: #49A7FF;
+  --flow-warn: #F58A1F;
   --flow-err: #F2625B;
-  --valve-open-fill: #BEFFC5;
+  --valve-open-fill: #D0F0D6;
   --valve-open-stroke: #307838;
   --valve-closed-fill: #FFFFFF;
   --valve-closed-stroke: #C1C6CE;
-  --pipe-stroke: #C1C6CE;
   --ink: #1F2021;
   --ink-soft: #4a4a52;
   --paper: #FAFAFC;
   --line: #D9D9D9;
-  --line-soft: #ECECF0;
-  --accent: #1F2021;
-  --ok-tint: rgba(58, 168, 71, 0.18);
-  --warn: #F2625B;
-  --warn-soft: #FEEDEB;
+  --warn: #F58A1F;
+  --warn-soft: #FEF1E0;
+  --err: #F2625B;
+  --err-soft: #FEEDEB;
   --ok: #307838;
   --ok-soft: #E8F7EA;
-  --info-soft: #E8F2FE;
 }
 
 * { box-sizing: border-box; }
@@ -33,14 +31,12 @@ body {
   margin: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--ink);
+  background: var(--paper);
   -webkit-font-smoothing: antialiased;
   line-height: 1.4;
 }
 
-.app {
-  max-width: 640px;
-  margin: 0 auto;
-}
+.app { max-width: 760px; margin: 0 auto; padding: 16px; }
 
 .header {
   display: flex;
@@ -51,7 +47,7 @@ body {
   border-bottom: 1px solid var(--line);
   margin-bottom: 12px;
 }
-.title { font-size: 14px; font-weight: 600; letter-spacing: 0.01em; }
+.title { font-size: 14px; font-weight: 600; }
 .subtitle { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; }
 
 .mode-switch {
@@ -60,7 +56,6 @@ body {
   border-radius: 999px;
   padding: 3px;
   font-size: 12px;
-  font-weight: 500;
 }
 .mode-switch button {
   border: 0;
@@ -78,13 +73,7 @@ body {
   box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 
-.toolbar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  font-size: 12px;
-  margin-bottom: 12px;
-}
+.toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
 .btn {
   border: 1px solid var(--line);
   background: white;
@@ -100,11 +89,7 @@ body {
   transition: background 0.1s;
 }
 .btn:hover { background: #F5F5F8; }
-.btn-primary {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: white;
-}
+.btn-primary { background: var(--ink); border-color: var(--ink); color: white; }
 .btn-primary:hover { background: #000; }
 
 .drill-panel {
@@ -125,15 +110,8 @@ body {
   margin-bottom: 4px;
   font-weight: 600;
 }
-.drill-brief {
-  font-weight: 500;
-  margin-bottom: 10px;
-}
-.drill-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
+.drill-brief { font-weight: 500; margin-bottom: 10px; }
+.drill-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .drill-result {
   font-size: 12px;
   font-weight: 500;
@@ -143,7 +121,7 @@ body {
 }
 .drill-result.show { display: inline-block; }
 .drill-result.pass { background: var(--ok-soft); color: var(--ok); }
-.drill-result.fail { background: var(--warn-soft); color: var(--warn); }
+.drill-result.fail { background: var(--err-soft); color: var(--err); }
 
 .diagram-wrap {
   background: white;
@@ -157,82 +135,54 @@ body {
   width: 100%;
   height: auto;
   display: block;
-  max-height: 78vh;
 }
 
-/* SVG class restoration since we stripped inline styles */
-.diagram .st0 { fill: #C1C6CE; }
-.diagram .st1 { fill: #FFFFFF; }
-.diagram .st2 { fill: #9F9FA6; }
-.diagram .st3 { fill: #E2C601; }
-.diagram .st4 { fill: #444449; }
-.diagram .st7 { fill-rule: evenodd; clip-rule: evenodd; fill: #C1C6CE; }
-.diagram .st8 { fill: #FFFFFF; stroke: #C1C6CE; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; stroke-miterlimit: 1.5; }
-.diagram .st9 { fill: none; stroke: var(--pipe-stroke); stroke-width: 3; }
-.diagram .st11 { fill: #49A7FF; }
-.diagram .st14 { fill: #F2625B; }
-.diagram .st16 { fill: none; stroke: #C1C6CE; stroke-width: 1.5; }
-.diagram .st17 { fill: none; stroke: #C1C6CE; }
-.diagram .st18 { fill: #F0F0F5; }
-
-/* Make valves and pumps clickable */
+/* Cursors only — colours left to the SVG's own embedded styles */
 .diagram [id^="valve-"],
 .diagram [id^="pump-"] {
   cursor: pointer;
 }
+.diagram [id^="valve-"] path,
+.diagram [id^="pump-"] path {
+  transition: fill 0.15s ease, stroke 0.15s ease, transform 0.2s ease;
+}
+.diagram .bilge-clickable { cursor: pointer; }
 .diagram [id^="valve-"]:hover .vbody,
-.diagram [id^="pump-"]:hover .pbody {
+.diagram [id^="pump-"]:hover .pump-pill {
   filter: brightness(0.97);
 }
 
-/* Flow overlays (added dynamically) */
+/* Pump toggle animation */
+.diagram .pump-pill { transition: fill 0.25s ease; }
+.diagram .pump-knob {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), fill 0.25s ease;
+}
+.diagram .pump-label { transition: opacity 0.2s ease; pointer-events: none; user-select: none; }
+
+.diagram #Key { display: none; }
+
 .flow-overlay {
   fill: none;
-  stroke: var(--flow-ok);
   stroke-width: 6;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-dasharray: 18 10;
   pointer-events: none;
   opacity: 0;
+  stroke: var(--flow-ok);
   transition: opacity 0.18s;
 }
 .flow-overlay.active {
   opacity: 1;
+  stroke-dasharray: 18 10;
   animation: flow 1.4s linear infinite;
 }
-.flow-overlay.reverse {
-  animation: flow-rev 1.4s linear infinite;
-}
-.flow-overlay.bilge-stage {
-  stroke: var(--bilge);
-  stroke-width: 5;
-  stroke-dasharray: none;
-  animation: none !important;
-}
-.flow-overlay.error {
-  stroke: var(--flow-err);
-}
+.flow-overlay.active.reverse { animation: flow-rev 1.4s linear infinite; }
+.flow-overlay.active.warning { stroke: var(--flow-warn); }
+.flow-overlay.active.error   { stroke: var(--flow-err); }
 
-@keyframes flow {
-  from { stroke-dashoffset: 0; }
-  to   { stroke-dashoffset: -28; }
-}
-@keyframes flow-rev {
-  from { stroke-dashoffset: 0; }
-  to   { stroke-dashoffset: 28; }
-}
+@keyframes flow     { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -28; } }
+@keyframes flow-rev { from { stroke-dashoffset: 0; } to { stroke-dashoffset:  28; } }
 
-/* Engine-running tint */
-.engine-running {
-  fill: var(--ok-tint);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.engine-running.on { opacity: 1; }
-
-/* Status row */
 .status-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -254,43 +204,49 @@ body {
   font-weight: 600;
   margin-bottom: 3px;
 }
-.status-card .state {
+.state {
   font-weight: 600;
   font-size: 13px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-}
-.state-ok    .dot { background: var(--ok); }
-.state-off   .dot { background: #C1C6CE; }
-.state-fire  .dot { background: var(--flow-err); }
-.state-err   .dot { background: var(--warn); }
-.state-ok    { color: var(--ok); }
-.state-off   { color: var(--ink-soft); }
-.state-fire  { color: var(--flow-err); }
-.state-err   { color: var(--warn); }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.state-ok   .dot { background: var(--ok); }
+.state-off  .dot { background: #C1C6CE; }
+.state-fire .dot { background: var(--flow-err); }
+.state-warn .dot { background: var(--warn); }
+.state-err  .dot { background: var(--err); }
+.state-ok   { color: var(--ok); }
+.state-off  { color: var(--ink-soft); }
+.state-fire { color: var(--flow-err); }
+.state-warn { color: var(--warn); }
+.state-err  { color: var(--err); }
 
-.warnings {
-  margin-top: 10px;
-  font-size: 12px;
-}
-.warning {
-  background: var(--warn-soft);
-  color: var(--warn);
+.alerts { margin-top: 10px; font-size: 12px; }
+.alert {
   padding: 8px 12px;
   border-radius: 6px;
   margin-bottom: 4px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  line-height: 1.4;
 }
-.warning::before { content: "!"; font-weight: 700; }
+.alert::before {
+  content: "!";
+  font-weight: 700;
+  flex-shrink: 0;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  text-align: center;
+  font-size: 11px;
+  line-height: 16px;
+}
+.alert.err  { background: var(--err-soft);  color: var(--err); }
+.alert.err::before  { background: var(--err);  color: white; }
+.alert.warn { background: var(--warn-soft); color: var(--warn); }
+.alert.warn::before { background: var(--warn); color: white; }
 
 .legend {
   display: flex;
@@ -310,26 +266,13 @@ body {
   border: 1px solid rgba(0,0,0,0.06);
 }
 
-/* Hide Key (legend) group from imported SVG since we have our own */
-.diagram #Key { display: none; }
-
-/* Bilge head pulse for drill scenarios */
-@keyframes pulse-bilge {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.18); opacity: 0.85; }
-}
-.diagram .bilge-target {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: pulse-bilge 1.1s ease-in-out infinite;
-}
-
 .help {
   font-size: 11px;
   color: var(--ink-soft);
   margin-top: 8px;
-  line-height: 1.45;
+  line-height: 1.5;
 }
+.help strong { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -340,8 +283,8 @@ body {
       <div class="subtitle">ORC 140 RS</div>
       <div class="title">Jabsco Bilge / Fire System Trainer</div>
     </div>
-    <div class="mode-switch" role="tablist">
-      <button id="mode-explore" class="active" type="button">Free Explore</button>
+    <div class="mode-switch">
+      <button id="mode-explore" class="active" type="button">Explore</button>
       <button id="mode-drill" type="button">Drill</button>
     </div>
   </div>
@@ -364,6 +307,23 @@ body {
     <svg class="diagram" version="1.1"
 	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 382 862"
 	 style="enable-background:new 0 0 382 862;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#C1C6CE;}
+	.st1{fill:#FFFFFF;}
+	.st2{fill:#9F9FA6;}
+	.st3{fill:#E2C601;}
+	.st4{fill:#444449;}
+	.st5{clip-path:url(#SVGID_00000137810286532834735980000005930356634578383256_);fill:#F2625B;}
+	.st6{clip-path:url(#SVGID_00000152956476747336109910000000522154214405695104_);fill:#49A7FF;}
+	.st7{fill-rule:evenodd;clip-rule:evenodd;fill:#C1C6CE;}
+	.st8{fill:#FFFFFF;stroke:#C1C6CE;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;}
+	.st9{fill:none;stroke:#C1C6CE;stroke-width:3;}
+	.st10{fill:#49A7FF;}
+	.st11{fill:#F2625B;}
+	.st12{fill:none;stroke:#C1C6CE;stroke-width:1.5;}
+	.st13{fill:none;stroke:#C1C6CE;}
+	.st14{fill:#F0F0F5;}
+</style>
 <g>
 		<g id="boat-hull">
 			<path class="st0" d="M370.7,295.1H11.3c-0.6,0-1.1-0.2-1.5-0.7c-0.4-0.4-0.6-1-0.5-1.5c0.8-8.4,1.8-16.9,3-25.3
@@ -681,7 +641,7 @@ body {
 				<clipPath id="SVGID">
 					<use xlink:href="#SVGID_1_"  style="overflow:visible;"/>
 				</clipPath>
-				<path style="clip-path:url(#SVGID_00000063631041140724581800000005522350827327889312_);fill:#F2625B;" d="M146.8,128.4
+				<path style="clip-path:url(#SVGID_00000069362763338374376940000007181547747034879388_);fill:#F2625B;" d="M146.8,128.4
 					c0,0-3.9,8.6-8.6,8.6c-4.8,0-8.6-3.9-8.6-8.6c0-4.8,3.9-8.6,8.6-8.6C142.9,119.8,146.8,128.4,146.8,128.4z"/>
 			</g>
 			<path class="st4" d="M158.6,125.9v-1h6.2v1h-2.5v7h-1.2v-7H158.6z M167.4,129.3v3.6h-1.2v-8h1.2v3h0.1c0.1-0.3,0.4-0.6,0.6-0.8
@@ -719,9 +679,9 @@ body {
 					<rect id="SVGID" x="138.2" y="144.9" width="9.2" height="18.4"/>
 				</defs>
 				<clipPath id="SVGID">
-					<use xlink:href="#SVGID_00000090999962062699224270000006473040341900057276_"  style="overflow:visible;"/>
+					<use xlink:href="#SVGID_00000135679641911237628150000001609874708337467314_"  style="overflow:visible;"/>
 				</clipPath>
-				<path style="clip-path:url(#SVGID_00000074433692637595580720000002393190122435316662_);fill:#49A7FF;" d="M146.8,154.1
+				<path style="clip-path:url(#SVGID_00000080202256113126474530000006014468997586371207_);fill:#49A7FF;" d="M146.8,154.1
 					c0,0-3.9,8.6-8.6,8.6c-4.8,0-8.6-3.9-8.6-8.6c0-4.8,3.9-8.6,8.6-8.6C142.9,145.5,146.8,154.1,146.8,154.1z"/>
 			</g>
 			<path class="st4" d="M160.2,150.6v8H159v-8H160.2z M163.1,155.1v3.6H162v-6h1.1v1h0.1c0.1-0.3,0.4-0.6,0.7-0.8
@@ -1007,20 +967,20 @@ body {
 				v1.1h-2.2v6.2H91v-6.2H88.7z"/>
 		</g>
 		<g id="pipe-zone-engine-room-fwd-stbd">
-			<polyline class="st9" points="214.9,461.9 251.6,461.9 251.6,406 361,406 361,505.8 336.1,505.8 336.1,522.7 			"/>
+			<polyline class="st9" points="214.9,461.9 251.6,461.9 251.6,406 361,406 361,505.8 296.8,505.8 296.8,532.1 319.3,532.1 			"/>
 		</g>
 		<g id="pipe-zone-fuel-stbd">
-			<path class="st9" d="M325.1,406H359c1.1,0,2,0.9,2,2l0,95.8c0,1.1-0.9,2-2,2h-20.9c-1.1,0-2,0.9-2,2V522c0-0.8,0-16.2,0-16.2H361
-				V406h-69.1v72.9H190.5v-112"/>
+			<path class="st9" d="M319.3,532.1l-22.6,0c0-5.9,0-26.3,0-26.3H361V406h-69.1v72.9H190.5v-112"/>
 		</g>
 		<g id="pipe-zone-accommodation-stbd">
-			<polyline class="st9" points="336.1,522.7 336.1,505.8 360.7,505.8 360.7,406 331.8,406 331.8,493.2 175,493.2 175,279.3 			"/>
+			<polyline class="st9" points="324.1,532.1 296.7,532.1 296.7,505.8 360.7,505.8 360.7,406 331.8,406 331.8,493.2 175,493.2 
+				175,279.3 			"/>
 		</g>
 		<g id="pipe-crossover">
 			<polyline class="st9" points="142.6,572.1 166.4,572.1 166.4,624.7 216.4,624.7 216.4,717.6 297.7,717.6 297.7,699.8 			"/>
 		</g>
 		<g id="pipe-seacock-stbd">
-			<line class="st9" x1="352.8" y1="539.5" x2="370.4" y2="539.5"/>
+			<line class="st9" x1="352.8" y1="532.1" x2="370.4" y2="532.1"/>
 		</g>
 		<g id="pipe-seacock-port">
 			<line class="st9" x1="27.9" y1="632.9" x2="11.1" y2="632.9"/>
@@ -1035,7 +995,7 @@ body {
 			<polyline class="st9" points="85.7,586.1 85.7,600.9 44.6,600.9 44.6,616.4 			"/>
 		</g>
 		<g id="pipe-3way-to-pump-stbd">
-			<polyline class="st9" points="319.3,539.5 234.1,539.5 234.1,685.5 247,685.5 			"/>
+			<polyline class="st9" points="336.1,549 336.1,558.3 234.1,558.3 234.1,685.5 247,685.5 			"/>
 		</g>
 		<g id="pipe-zone-tiller-flat">
 			<polyline class="st9" points="198.5,793.3 198.5,661 88.6,661 88.6,742.8 56.6,742.8 56.6,659.7 74.5,659.7 74.5,632.9 
@@ -1062,72 +1022,35 @@ body {
 		</g>
 		<g id="hull-intake-stbd">
 			<g>
-				<defs>
-					<rect id="SVGID" x="7.1" y="621.6" width="8" height="22.5"/>
-				</defs>
-				<clipPath id="SVGID">
-					<use xlink:href="#SVGID_00000183962447964600997640000010925310512800570806_"  style="overflow:visible;"/>
-				</clipPath>
-				<g style="clip-path:url(#SVGID_00000062870914626700099170000007675208317308662715_);">
-					<path class="st11" d="M15.1,632.9c0,0-5,11.2-11.2,11.2s-11.2-5-11.2-11.2c0-6.2,5-11.2,11.2-11.2S15.1,632.9,15.1,632.9z"/>
-				</g>
+				<path class="st10" d="M15.1,632.9c0,0-3.4,7.5-8,10.3v-20.5C11.8,625.4,15.1,632.9,15.1,632.9z"/>
 			</g>
 		</g>
 		<g id="hull-intake-port">
-			<g>
-				<defs>
-					<rect id="SVGID" x="366.9" y="528.2" width="8" height="22.5"/>
-				</defs>
-				<clipPath id="SVGID">
-					<use xlink:href="#SVGID_00000075870252592404747590000010298864305654901642_"  style="overflow:visible;"/>
-				</clipPath>
-				<g style="clip-path:url(#SVGID_00000127027273129476993990000014013164245263294140_);">
-					<path class="st11" d="M366.9,539.5c0,0,5-11.2,11.2-11.2s11.2,5,11.2,11.2c0,6.2-5,11.2-11.2,11.2S366.9,539.5,366.9,539.5z"/>
-				</g>
-			</g>
+			<path class="st10" d="M374.9,521.9v20.5c-4.6-2.7-8-10.3-8-10.3S370.2,524.6,374.9,521.9z"/>
 		</g>
 		<g id="hull-discharge-stbd">
-			<g>
-				<defs>
-					<rect id="SVGID" x="365.9" y="621.6" width="9" height="22.5"/>
-				</defs>
-				<clipPath id="SVGID">
-					<use xlink:href="#SVGID_00000106848599741188655430000001430682087313442711_"  style="overflow:visible;"/>
-				</clipPath>
-				<g style="clip-path:url(#SVGID_00000106849767198285395980000006764032208555650231_);">
-					<path class="st14" d="M365.9,632.9c0,0,5-11.2,11.2-11.2c6.2,0,11.2,5,11.2,11.2c0,6.2-5,11.2-11.2,11.2
-						C370.9,644.1,365.9,632.9,365.9,632.9z"/>
-				</g>
-			</g>
+			<path class="st11" d="M374.9,622.1v21.6c-5.1-2.1-9-10.8-9-10.8S369.7,624.2,374.9,622.1z"/>
 		</g>
 		<g id="hull-discharge-port">
 			<g>
-				<defs>
-					<rect id="SVGID" x="7.1" y="561.5" width="8" height="22.5"/>
-				</defs>
-				<clipPath id="SVGID">
-					<use xlink:href="#SVGID_00000017512324495705247180000015309580467473112971_"  style="overflow:visible;"/>
-				</clipPath>
-				<g style="clip-path:url(#SVGID_00000094586400723180743720000005716140559620634550_);">
-					<path class="st14" d="M15.1,572.8c0,0-5,11.2-11.2,11.2s-11.2-5-11.2-11.2c0-6.2,5-11.2,11.2-11.2S15.1,572.8,15.1,572.8z"/>
-				</g>
+				<path class="st11" d="M15.1,572.8c0,0-3.4,7.5-8,10.3v-20.5C11.8,565.2,15.1,572.8,15.1,572.8z"/>
 			</g>
 		</g>
 		<g id="valve-3way-stbd">
 			<g>
-				<path class="st1" d="M336.1,556.2L336.1,556.2c-9.3,0-16.8-7.5-16.8-16.8l0,0c0-9.3,7.5-16.8,16.8-16.8l0,0
-					c9.3,0,16.8,7.5,16.8,16.8l0,0C352.8,548.7,345.3,556.2,336.1,556.2z"/>
-				<path class="st16" d="M336.1,556.2L336.1,556.2c-9.3,0-16.8-7.5-16.8-16.8l0,0c0-9.3,7.5-16.8,16.8-16.8l0,0
-					c9.3,0,16.8,7.5,16.8,16.8l0,0C352.8,548.7,345.3,556.2,336.1,556.2z"/>
-				<path class="st4" d="M336,542.1h-10.8c-1.5,0-2.7-1.2-2.7-2.7s1.2-2.7,2.7-2.7h8.1v-8.1c0-1.5,1.2-2.7,2.7-2.7s2.7,1.2,2.7,2.7
-					v10.8C338.7,540.9,337.5,542.1,336,542.1C336,542.1,336,542.1,336,542.1z"/>
+				<path class="st1" d="M352.8,532.1L352.8,532.1c0,9.3-7.5,16.8-16.8,16.8l0,0c-9.3,0-16.8-7.5-16.8-16.8l0,0
+					c0-9.3,7.5-16.8,16.8-16.8l0,0C345.3,515.4,352.8,522.9,352.8,532.1z"/>
+				<path class="st12" d="M352.8,532.1L352.8,532.1c0,9.3-7.5,16.8-16.8,16.8l0,0c-9.3,0-16.8-7.5-16.8-16.8l0,0
+					c0-9.3,7.5-16.8,16.8-16.8l0,0C345.3,515.4,352.8,522.9,352.8,532.1z"/>
+				<path class="st4" d="M338.7,532.2V543c0,1.5-1.2,2.7-2.7,2.7s-2.7-1.2-2.7-2.7v-8.1h-8.1c-1.5,0-2.7-1.2-2.7-2.7
+					s1.2-2.7,2.7-2.7h10.8C337.5,529.5,338.7,530.7,338.7,532.2C338.7,532.1,338.7,532.2,338.7,532.2z"/>
 			</g>
 		</g>
 		<g id="valve-zone-accommodation-stbd">
 			<g>
 				<path class="st1" d="M314.8,434.1L314.8,434.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
 					c0,9.3-7.5,16.8-16.8,16.8l0,0C322.3,450.9,314.8,443.4,314.8,434.1z"/>
-				<path class="st16" d="M314.8,434.1L314.8,434.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
+				<path class="st12" d="M314.8,434.1L314.8,434.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
 					c0,9.3-7.5,16.8-16.8,16.8l0,0C322.3,450.9,314.8,443.4,314.8,434.1z"/>
 				<path class="st4" d="M319.1,434.1L319.1,434.1c0-1.5,1.2-2.7,2.7-2.7h19.6c1.5,0,2.7,1.2,2.7,2.7l0,0c0,1.5-1.2,2.7-2.7,2.7
 					h-19.6C320.3,436.8,319.1,435.6,319.1,434.1z"/>
@@ -1137,7 +1060,7 @@ body {
 			<g>
 				<path class="st1" d="M274.8,434.1L274.8,434.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
 					c0,9.3-7.5,16.8-16.8,16.8l0,0C282.3,450.9,274.8,443.4,274.8,434.1z"/>
-				<path class="st16" d="M274.8,434.1L274.8,434.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
+				<path class="st12" d="M274.8,434.1L274.8,434.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
 					c0,9.3-7.5,16.8-16.8,16.8l0,0C282.3,450.9,274.8,443.4,274.8,434.1z"/>
 				<path class="st4" d="M279.1,434.1L279.1,434.1c0-1.5,1.2-2.7,2.7-2.7h19.6c1.5,0,2.7,1.2,2.7,2.7l0,0c0,1.5-1.2,2.7-2.7,2.7
 					h-19.6C280.3,436.8,279.1,435.6,279.1,434.1z"/>
@@ -1147,7 +1070,7 @@ body {
 			<g>
 				<path class="st1" d="M234.8,434.1L234.8,434.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.7,7.5,16.7,16.8l0,0
 					c0,9.3-7.5,16.8-16.7,16.8l0,0C242.3,450.9,234.8,443.4,234.8,434.1z"/>
-				<path class="st16" d="M234.8,434.1L234.8,434.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.7,7.5,16.7,16.8l0,0
+				<path class="st12" d="M234.8,434.1L234.8,434.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.7,7.5,16.7,16.8l0,0
 					c0,9.3-7.5,16.8-16.7,16.8l0,0C242.3,450.9,234.8,443.4,234.8,434.1z"/>
 				<path class="st4" d="M239.1,434.1L239.1,434.1c0-1.5,1.2-2.7,2.7-2.7h19.6c1.5,0,2.7,1.2,2.7,2.7l0,0c0,1.5-1.2,2.7-2.7,2.7
 					h-19.6C240.3,436.8,239.1,435.6,239.1,434.1z"/>
@@ -1157,7 +1080,7 @@ body {
 			<g>
 				<path class="st1" d="M71.9,713.9L71.9,713.9c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
 					c0,9.3-7.5,16.8-16.8,16.8l0,0C79.4,730.6,71.9,723.2,71.9,713.9z"/>
-				<path class="st16" d="M71.9,713.9L71.9,713.9c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
+				<path class="st12" d="M71.9,713.9L71.9,713.9c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
 					c0,9.3-7.5,16.8-16.8,16.8l0,0C79.4,730.6,71.9,723.2,71.9,713.9z"/>
 				<path class="st4" d="M76.1,713.9L76.1,713.9c0-1.5,1.2-2.7,2.7-2.7h19.6c1.5,0,2.7,1.2,2.7,2.7l0,0c0,1.5-1.2,2.7-2.7,2.7H78.8
 					C77.3,716.6,76.1,715.4,76.1,713.9z"/>
@@ -1167,7 +1090,7 @@ body {
 			<g>
 				<path class="st1" d="M115.9,713.9L115.9,713.9c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
 					c0,9.3-7.5,16.8-16.8,16.8l0,0C123.4,730.6,115.9,723.2,115.9,713.9z"/>
-				<path class="st16" d="M115.9,713.9L115.9,713.9c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
+				<path class="st12" d="M115.9,713.9L115.9,713.9c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
 					c0,9.3-7.5,16.8-16.8,16.8l0,0C123.4,730.6,115.9,723.2,115.9,713.9z"/>
 				<path class="st4" d="M120.1,713.9L120.1,713.9c0-1.5,1.2-2.7,2.7-2.7h19.6c1.5,0,2.7,1.2,2.7,2.7l0,0c0,1.5-1.2,2.7-2.7,2.7
 					h-19.6C121.3,716.6,120.1,715.4,120.1,713.9z"/>
@@ -1177,7 +1100,7 @@ body {
 			<g>
 				<path class="st1" d="M27.9,633.1L27.9,633.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
 					c0,9.3-7.5,16.8-16.8,16.8l0,0C35.4,649.9,27.9,642.4,27.9,633.1z"/>
-				<path class="st16" d="M27.9,633.1L27.9,633.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
+				<path class="st12" d="M27.9,633.1L27.9,633.1c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
 					c0,9.3-7.5,16.8-16.8,16.8l0,0C35.4,649.9,27.9,642.4,27.9,633.1z"/>
 				<path class="st4" d="M41.9,633.1v-10.8c0-1.5,1.2-2.7,2.7-2.7c1.5,0,2.7,1.2,2.7,2.7v8.1h8.1c1.5,0,2.7,1.2,2.7,2.7
 					s-1.2,2.7-2.7,2.7H44.6C43.1,635.8,41.9,634.6,41.9,633.1C41.9,633.1,41.9,633.1,41.9,633.1z"/>
@@ -1185,93 +1108,25 @@ body {
 		</g>
 		<g id="valve-crossover">
 			<g>
-				<path class="st1" d="M175.2,624.7L175.2,624.7c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
-					c0,9.3-7.5,16.8-16.8,16.8l0,0C182.7,641.4,175.2,633.9,175.2,624.7z"/>
-				<path class="st16" d="M175.2,624.7L175.2,624.7c0-9.3,7.5-16.8,16.8-16.8l0,0c9.3,0,16.8,7.5,16.8,16.8l0,0
-					c0,9.3-7.5,16.8-16.8,16.8l0,0C182.7,641.4,175.2,633.9,175.2,624.7z"/>
-				<path class="st4" d="M179.4,624.7L179.4,624.7c0-1.5,1.2-2.7,2.7-2.7h19.6c1.5,0,2.7,1.2,2.7,2.7l0,0c0,1.5-1.2,2.7-2.7,2.7
-					h-19.6C180.6,627.4,179.4,626.2,179.4,624.7z"/>
+				<path class="st1" d="M191.9,607.9L191.9,607.9c9.3,0,16.8,7.5,16.8,16.8l0,0c0,9.3-7.5,16.8-16.8,16.8l0,0
+					c-9.3,0-16.8-7.5-16.8-16.8l0,0C175.2,615.4,182.7,607.9,191.9,607.9z"/>
+				<path class="st12" d="M191.9,607.9L191.9,607.9c9.3,0,16.8,7.5,16.8,16.8l0,0c0,9.3-7.5,16.8-16.8,16.8l0,0
+					c-9.3,0-16.8-7.5-16.8-16.8l0,0C175.2,615.4,182.7,607.9,191.9,607.9z"/>
+				<path class="st4" d="M191.9,612.2L191.9,612.2c1.5,0,2.7,1.2,2.7,2.7v19.6c0,1.5-1.2,2.7-2.7,2.7l0,0c-1.5,0-2.7-1.2-2.7-2.7
+					v-19.6C189.3,613.4,190.5,612.2,191.9,612.2z"/>
 			</g>
 		</g>
-		<g id="pump-jabsco-port">
-			<g>
-				<path class="st1" d="M49.6,558.1h79c7.7,0,14,6.3,14,14l0,0c0,7.7-6.3,14-14,14h-79c-7.7,0-14-6.3-14-14l0,0
-					C35.6,564.4,41.9,558.1,49.6,558.1z"/>
-				<path class="st17" d="M49.6,558.1h79c7.7,0,14,6.3,14,14l0,0c0,7.7-6.3,14-14,14h-79c-7.7,0-14-6.3-14-14l0,0
-					C35.6,564.4,41.9,558.1,49.6,558.1z"/>
-				<path class="st4" d="M53.1,569.1h1.2v4.6c0,0.4-0.1,0.8-0.3,1.1c-0.2,0.3-0.4,0.5-0.7,0.7c-0.3,0.2-0.7,0.2-1.1,0.2
-					c-0.4,0-0.7-0.1-1-0.2c-0.3-0.1-0.5-0.3-0.7-0.6s-0.3-0.6-0.3-1h1.2c0,0.2,0,0.3,0.1,0.5c0.1,0.1,0.2,0.2,0.3,0.3
-					c0.1,0.1,0.3,0.1,0.5,0.1c0.2,0,0.4,0,0.5-0.1c0.1-0.1,0.2-0.2,0.3-0.4c0.1-0.2,0.1-0.4,0.1-0.6V569.1z M56.5,575.6h-1.3
-					l2.3-6.5H59l2.3,6.5h-1.3l-1.7-5.2h-0.1L56.5,575.6z M56.6,573.1H60v1h-3.5V573.1z M62.3,575.6v-6.5h2.5c0.5,0,0.9,0.1,1.2,0.2
-					c0.3,0.1,0.6,0.3,0.7,0.6c0.2,0.3,0.2,0.5,0.2,0.9c0,0.3-0.1,0.5-0.2,0.7c-0.1,0.2-0.2,0.3-0.4,0.5c-0.2,0.1-0.4,0.2-0.6,0.3
-					v0.1c0.2,0,0.5,0.1,0.7,0.2c0.2,0.1,0.4,0.3,0.5,0.5c0.1,0.2,0.2,0.5,0.2,0.8c0,0.3-0.1,0.6-0.2,0.9c-0.2,0.3-0.4,0.5-0.7,0.6
-					c-0.3,0.2-0.7,0.2-1.2,0.2H62.3z M63.5,574.7h1.3c0.4,0,0.7-0.1,0.9-0.2c0.2-0.2,0.3-0.4,0.3-0.6c0-0.2,0-0.4-0.1-0.5
-					c-0.1-0.2-0.2-0.3-0.4-0.4c-0.2-0.1-0.4-0.1-0.6-0.1h-1.3V574.7z M63.5,571.9h1.2c0.2,0,0.4,0,0.6-0.1c0.2-0.1,0.3-0.2,0.4-0.3
-					c0.1-0.1,0.1-0.3,0.1-0.5c0-0.3-0.1-0.5-0.3-0.6c-0.2-0.2-0.4-0.2-0.8-0.2h-1.2V571.9z M71.8,570.9c0-0.3-0.2-0.5-0.4-0.7
-					c-0.2-0.2-0.5-0.2-0.9-0.2c-0.2,0-0.5,0-0.6,0.1c-0.2,0.1-0.3,0.2-0.4,0.3c-0.1,0.1-0.1,0.3-0.1,0.4c0,0.1,0,0.3,0.1,0.4
-					c0.1,0.1,0.2,0.2,0.3,0.3c0.1,0.1,0.2,0.1,0.4,0.2s0.3,0.1,0.4,0.1l0.6,0.2c0.2,0.1,0.5,0.1,0.7,0.2c0.2,0.1,0.4,0.2,0.6,0.4
-					c0.2,0.2,0.3,0.3,0.4,0.5c0.1,0.2,0.2,0.5,0.2,0.7c0,0.4-0.1,0.7-0.3,1c-0.2,0.3-0.5,0.5-0.9,0.7c-0.4,0.2-0.8,0.2-1.3,0.2
-					c-0.5,0-1-0.1-1.3-0.2c-0.4-0.2-0.7-0.4-0.9-0.7c-0.2-0.3-0.3-0.7-0.3-1.1h1.2c0,0.2,0.1,0.4,0.2,0.6c0.1,0.2,0.3,0.3,0.5,0.3
-					c0.2,0.1,0.4,0.1,0.7,0.1c0.3,0,0.5,0,0.7-0.1c0.2-0.1,0.3-0.2,0.5-0.3c0.1-0.1,0.2-0.3,0.2-0.5c0-0.2-0.1-0.3-0.2-0.4
-					c-0.1-0.1-0.2-0.2-0.4-0.3c-0.2-0.1-0.4-0.1-0.6-0.2l-0.7-0.2c-0.5-0.1-1-0.3-1.3-0.6c-0.3-0.3-0.5-0.7-0.5-1.1
-					c0-0.4,0.1-0.7,0.3-1c0.2-0.3,0.5-0.5,0.9-0.7c0.4-0.2,0.8-0.2,1.2-0.2c0.5,0,0.9,0.1,1.2,0.2c0.4,0.2,0.6,0.4,0.8,0.7
-					c0.2,0.3,0.3,0.6,0.3,1H71.8z M79.8,571.3h-1.2c0-0.2-0.1-0.4-0.2-0.5c-0.1-0.2-0.2-0.3-0.3-0.4c-0.1-0.1-0.3-0.2-0.5-0.2
-					c-0.2-0.1-0.4-0.1-0.6-0.1c-0.4,0-0.7,0.1-0.9,0.3c-0.3,0.2-0.5,0.4-0.6,0.8c-0.2,0.3-0.2,0.8-0.2,1.2c0,0.5,0.1,0.9,0.2,1.3
-					c0.2,0.3,0.4,0.6,0.6,0.8c0.3,0.2,0.6,0.3,0.9,0.3c0.2,0,0.4,0,0.5-0.1c0.2-0.1,0.3-0.1,0.5-0.2c0.1-0.1,0.3-0.2,0.3-0.4
-					c0.1-0.1,0.2-0.3,0.2-0.5l1.2,0c0,0.3-0.1,0.6-0.3,0.9c-0.1,0.3-0.3,0.5-0.6,0.7c-0.2,0.2-0.5,0.4-0.8,0.5
-					c-0.3,0.1-0.7,0.2-1.1,0.2c-0.6,0-1.1-0.1-1.5-0.4c-0.5-0.3-0.8-0.7-1.1-1.2c-0.3-0.5-0.4-1.1-0.4-1.8c0-0.7,0.1-1.3,0.4-1.8
-					c0.3-0.5,0.6-0.9,1.1-1.2c0.5-0.3,1-0.4,1.5-0.4c0.4,0,0.7,0.1,1,0.2c0.3,0.1,0.6,0.3,0.8,0.5c0.2,0.2,0.4,0.4,0.6,0.7
-					C79.7,570.6,79.8,570.9,79.8,571.3z M86.8,572.4c0,0.7-0.1,1.3-0.4,1.8c-0.3,0.5-0.6,0.9-1.1,1.2c-0.5,0.3-1,0.4-1.5,0.4
-					c-0.6,0-1.1-0.1-1.5-0.4c-0.5-0.3-0.8-0.7-1.1-1.2c-0.3-0.5-0.4-1.1-0.4-1.8c0-0.7,0.1-1.3,0.4-1.8c0.3-0.5,0.6-0.9,1.1-1.2
-					c0.5-0.3,1-0.4,1.5-0.4c0.6,0,1.1,0.1,1.5,0.4c0.5,0.3,0.8,0.7,1.1,1.2C86.7,571.1,86.8,571.7,86.8,572.4z M85.7,572.4
-					c0-0.5-0.1-0.9-0.2-1.3c-0.2-0.3-0.4-0.6-0.6-0.8c-0.3-0.2-0.6-0.3-0.9-0.3c-0.4,0-0.7,0.1-0.9,0.3c-0.3,0.2-0.5,0.4-0.6,0.8
-					c-0.2,0.3-0.2,0.8-0.2,1.3c0,0.5,0.1,0.9,0.2,1.3c0.2,0.3,0.4,0.6,0.6,0.8c0.3,0.2,0.6,0.3,0.9,0.3c0.4,0,0.7-0.1,0.9-0.3
-					c0.3-0.2,0.5-0.4,0.6-0.8C85.6,573.3,85.7,572.9,85.7,572.4z"/>
-				<path class="st18" d="M105.1,562.6h21c5.2,0,9.5,4.3,9.5,9.5l0,0c0,5.2-4.3,9.5-9.5,9.5h-21c-5.2,0-9.5-4.3-9.5-9.5l0,0
-					C95.6,566.9,99.9,562.6,105.1,562.6z"/>
-				<path class="st0" d="M105.1,566.6L105.1,566.6c3,0,5.5,2.5,5.5,5.5l0,0c0,3-2.5,5.5-5.5,5.5l0,0c-3,0-5.5-2.5-5.5-5.5l0,0
-					C99.6,569.1,102.1,566.6,105.1,566.6z"/>
-			</g>
+		<g id="pump-jabsco-port" class="pump-toggle" data-side="port" data-slide="79">
+			<rect class="pump-pill" x="35.6" y="558.1" width="107" height="28" rx="14" ry="14" fill="#FFFFFF" stroke="#C1C6CE" stroke-width="1"/>
+			<text class="pump-label pump-label-off" x="99.80" y="572.1" text-anchor="middle" dominant-baseline="central" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="9" font-weight="700" fill="#444449">JABSCO: OFF</text>
+			<text class="pump-label pump-label-on" x="78.40" y="572.1" text-anchor="middle" dominant-baseline="central" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="9" font-weight="700" fill="#444449" opacity="0">JABSCO: ON</text>
+			<circle class="pump-knob" cx="49.6" cy="572.1" r="9.5" fill="#C1C6CE"/>
 		</g>
-		<g id="pump-jabsco-stbd">
-			<g>
-				<path class="st1" d="M260.8,671.8h74c7.7,0,14,6.3,14,14l0,0c0,7.7-6.3,14-14,14h-74c-7.7,0-14-6.3-14-14l0,0
-					C246.8,678,253.1,671.8,260.8,671.8z"/>
-				<path class="st17" d="M260.8,671.8h74c7.7,0,14,6.3,14,14l0,0c0,7.7-6.3,14-14,14h-74c-7.7,0-14-6.3-14-14l0,0
-					C246.8,678,253.1,671.8,260.8,671.8z"/>
-				<path class="st4" d="M261.9,682.7h1.2v4.6c0,0.4-0.1,0.8-0.3,1.1c-0.2,0.3-0.4,0.5-0.7,0.7c-0.3,0.2-0.7,0.2-1.1,0.2
-					c-0.4,0-0.7-0.1-1-0.2c-0.3-0.1-0.5-0.3-0.7-0.6c-0.2-0.3-0.3-0.6-0.3-1h1.2c0,0.2,0,0.3,0.1,0.5c0.1,0.1,0.2,0.2,0.3,0.3
-					c0.1,0.1,0.3,0.1,0.5,0.1c0.2,0,0.3,0,0.5-0.1c0.1-0.1,0.2-0.2,0.3-0.4c0.1-0.2,0.1-0.4,0.1-0.6V682.7z M265.2,689.3H264
-					l2.3-6.5h1.5l2.3,6.5h-1.3L267,684H267L265.2,689.3z M265.3,686.7h3.5v1h-3.5V686.7z M271,689.3v-6.5h2.5c0.5,0,0.9,0.1,1.2,0.2
-					c0.3,0.1,0.6,0.3,0.7,0.6c0.2,0.3,0.2,0.5,0.2,0.9c0,0.3-0.1,0.5-0.2,0.7c-0.1,0.2-0.2,0.3-0.4,0.5c-0.2,0.1-0.4,0.2-0.6,0.3
-					v0.1c0.2,0,0.5,0.1,0.7,0.2c0.2,0.1,0.4,0.3,0.5,0.5c0.1,0.2,0.2,0.5,0.2,0.8c0,0.3-0.1,0.6-0.2,0.9c-0.2,0.3-0.4,0.5-0.7,0.6
-					c-0.3,0.2-0.7,0.2-1.2,0.2H271z M272.2,688.3h1.3c0.4,0,0.7-0.1,0.9-0.2c0.2-0.2,0.3-0.4,0.3-0.6c0-0.2,0-0.4-0.1-0.5
-					c-0.1-0.2-0.2-0.3-0.4-0.4c-0.2-0.1-0.4-0.1-0.6-0.1h-1.3V688.3z M272.2,685.5h1.2c0.2,0,0.4,0,0.6-0.1c0.2-0.1,0.3-0.2,0.4-0.3
-					c0.1-0.1,0.1-0.3,0.1-0.5c0-0.3-0.1-0.5-0.3-0.6c-0.2-0.2-0.4-0.2-0.8-0.2h-1.2V685.5z M280.6,684.5c0-0.3-0.2-0.5-0.4-0.7
-					c-0.2-0.2-0.5-0.2-0.9-0.2c-0.2,0-0.5,0-0.6,0.1c-0.2,0.1-0.3,0.2-0.4,0.3c-0.1,0.1-0.1,0.3-0.1,0.4c0,0.1,0,0.3,0.1,0.4
-					c0.1,0.1,0.1,0.2,0.3,0.3c0.1,0.1,0.2,0.1,0.4,0.2s0.3,0.1,0.4,0.1l0.6,0.2c0.2,0.1,0.5,0.1,0.7,0.2c0.2,0.1,0.4,0.2,0.6,0.4
-					c0.2,0.2,0.3,0.3,0.4,0.5c0.1,0.2,0.2,0.5,0.2,0.7c0,0.4-0.1,0.7-0.3,1c-0.2,0.3-0.5,0.5-0.9,0.7c-0.4,0.2-0.8,0.2-1.3,0.2
-					c-0.5,0-1-0.1-1.3-0.2c-0.4-0.2-0.7-0.4-0.9-0.7c-0.2-0.3-0.3-0.7-0.3-1.1h1.2c0,0.2,0.1,0.4,0.2,0.6c0.1,0.2,0.3,0.3,0.5,0.3
-					c0.2,0.1,0.4,0.1,0.7,0.1c0.3,0,0.5,0,0.7-0.1c0.2-0.1,0.3-0.2,0.5-0.3c0.1-0.1,0.2-0.3,0.2-0.5c0-0.2-0.1-0.3-0.2-0.4
-					c-0.1-0.1-0.2-0.2-0.4-0.3c-0.2-0.1-0.4-0.1-0.6-0.2l-0.7-0.2c-0.5-0.1-1-0.3-1.3-0.6c-0.3-0.3-0.5-0.7-0.5-1.1
-					c0-0.4,0.1-0.7,0.3-1c0.2-0.3,0.5-0.5,0.9-0.7c0.4-0.2,0.8-0.2,1.2-0.2c0.5,0,0.9,0.1,1.2,0.2c0.4,0.2,0.6,0.4,0.8,0.7
-					c0.2,0.3,0.3,0.6,0.3,1H280.6z M288.6,684.9h-1.2c0-0.2-0.1-0.4-0.2-0.5c-0.1-0.2-0.2-0.3-0.3-0.4c-0.1-0.1-0.3-0.2-0.5-0.2
-					c-0.2-0.1-0.4-0.1-0.6-0.1c-0.4,0-0.7,0.1-0.9,0.3c-0.3,0.2-0.5,0.4-0.6,0.8c-0.2,0.3-0.2,0.8-0.2,1.2c0,0.5,0.1,0.9,0.2,1.3
-					c0.2,0.3,0.4,0.6,0.6,0.8c0.3,0.2,0.6,0.3,0.9,0.3c0.2,0,0.4,0,0.5-0.1c0.2-0.1,0.3-0.1,0.5-0.2c0.1-0.1,0.3-0.2,0.3-0.4
-					c0.1-0.1,0.2-0.3,0.2-0.5l1.2,0c0,0.3-0.1,0.6-0.3,0.9c-0.1,0.3-0.3,0.5-0.6,0.7c-0.2,0.2-0.5,0.4-0.8,0.5
-					c-0.3,0.1-0.7,0.2-1.1,0.2c-0.6,0-1.1-0.1-1.5-0.4c-0.5-0.3-0.8-0.7-1.1-1.2c-0.3-0.5-0.4-1.1-0.4-1.8c0-0.7,0.1-1.3,0.4-1.8
-					c0.3-0.5,0.6-0.9,1.1-1.2c0.5-0.3,1-0.4,1.5-0.4c0.4,0,0.7,0.1,1,0.2c0.3,0.1,0.6,0.3,0.8,0.5c0.2,0.2,0.4,0.4,0.6,0.7
-					C288.4,684.2,288.5,684.5,288.6,684.9z M295.6,686c0,0.7-0.1,1.3-0.4,1.8c-0.3,0.5-0.6,0.9-1.1,1.2c-0.5,0.3-1,0.4-1.5,0.4
-					s-1.1-0.1-1.5-0.4c-0.5-0.3-0.8-0.7-1.1-1.2c-0.3-0.5-0.4-1.1-0.4-1.8c0-0.7,0.1-1.3,0.4-1.8c0.3-0.5,0.6-0.9,1.1-1.2
-					c0.5-0.3,1-0.4,1.5-0.4s1.1,0.1,1.5,0.4c0.5,0.3,0.8,0.7,1.1,1.2C295.4,684.7,295.6,685.3,295.6,686z M294.4,686
-					c0-0.5-0.1-0.9-0.2-1.3c-0.2-0.3-0.4-0.6-0.6-0.8c-0.3-0.2-0.6-0.3-0.9-0.3c-0.4,0-0.7,0.1-0.9,0.3c-0.3,0.2-0.5,0.4-0.6,0.8
-					c-0.2,0.3-0.2,0.8-0.2,1.3c0,0.5,0.1,0.9,0.2,1.3c0.2,0.3,0.4,0.6,0.6,0.8c0.3,0.2,0.6,0.3,0.9,0.3c0.4,0,0.7-0.1,0.9-0.3
-					c0.3-0.2,0.5-0.4,0.6-0.8C294.3,686.9,294.4,686.5,294.4,686z"/>
-				<path class="st18" d="M313.8,676.3h21c5.2,0,9.5,4.3,9.5,9.5l0,0c0,5.2-4.3,9.5-9.5,9.5h-21c-5.2,0-9.5-4.3-9.5-9.5l0,0
-					C304.3,680.5,308.6,676.3,313.8,676.3z"/>
-				<path class="st0" d="M313.8,680.3L313.8,680.3c3,0,5.5,2.5,5.5,5.5l0,0c0,3-2.5,5.5-5.5,5.5l0,0c-3,0-5.5-2.5-5.5-5.5l0,0
-					C308.3,682.7,310.8,680.3,313.8,680.3z"/>
-			</g>
+		<g id="pump-jabsco-stbd" class="pump-toggle" data-side="stbd" data-slide="74">
+			<rect class="pump-pill" x="246.8" y="671.8" width="102" height="28" rx="14" ry="14" fill="#FFFFFF" stroke="#C1C6CE" stroke-width="1"/>
+			<text class="pump-label pump-label-off" x="308.00" y="685.8" text-anchor="middle" dominant-baseline="central" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="9" font-weight="700" fill="#444449">JABSCO: OFF</text>
+			<text class="pump-label pump-label-on" x="287.60" y="685.8" text-anchor="middle" dominant-baseline="central" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="9" font-weight="700" fill="#444449" opacity="0">JABSCO: ON</text>
+			<circle class="pump-knob" cx="260.8" cy="685.8" r="9.5" fill="#C1C6CE"/>
 		</g>
 	</g>
 </svg>
@@ -1288,16 +1143,19 @@ body {
     </div>
   </div>
 
-  <div id="warnings" class="warnings"></div>
+  <div id="alerts" class="alerts"></div>
 
   <div class="legend">
-    <span class="legend-item"><span class="legend-swatch" style="background:#E2C601"></span> Bilge water</span>
-    <span class="legend-item"><span class="legend-swatch" style="background:#49A7FF"></span> Flow</span>
-    <span class="legend-item"><span class="legend-swatch" style="background:#F2625B"></span> Fault / fire</span>
+    <span class="legend-item"><span class="legend-swatch" style="background:#E2C601"></span> Bilge water (idle)</span>
+    <span class="legend-item"><span class="legend-swatch" style="background:#49A7FF"></span> Flow OK</span>
+    <span class="legend-item"><span class="legend-swatch" style="background:#F58A1F"></span> Air-suck</span>
+    <span class="legend-item"><span class="legend-swatch" style="background:#F2625B"></span> Fault</span>
     <span class="legend-item"><span class="legend-swatch" style="background:#BEFFC5;border:1px solid #307838"></span> Valve open</span>
   </div>
 
-  <div class="help">Tap valves and pumps to toggle. Engine room aft/fwd open by default. 3-way toggles BILGE <-> FIRE.</div>
+  <div class="help">
+    Tap valves and pumps to toggle. Tap a <strong>yellow bilge intake</strong> to mark its compartment dry (no water). Drill mode auto-sets flooded zones.
+  </div>
 
 </div>
 
@@ -1305,24 +1163,21 @@ body {
 (function(){
 'use strict';
 
-// ===== Plumbing model =====
-// Zone valves grouped by manifold side
 const ZONES = {
-  'engine-room-aft':      { id: 'valve-zone-engine-room-aft-port',      side: 'port', pipe: 'pipe-zone-engine-room-aft',      bilge: 'bilge-head-engine-room-aft',      label: 'Engine room aft',  default: true,  flowReverse: false },
-  'tiller-flat':          { id: 'valve-zone-tiller-flat-port',          side: 'port', pipe: 'pipe-zone-tiller-flat',          bilge: 'bilge-head-tiller-flat',          label: 'Tiller flat',       default: false, flowReverse: false },
-  'engine-room-fwd':      { id: 'valve-zone-engine-room-fwd-stbd',      side: 'stbd', pipe: 'pipe-zone-engine-room-fwd-stbd', bilge: 'bilge-head-engine-room-fwd',      label: 'Engine room fwd',   default: true,  flowReverse: false },
-  'accommodation':        { id: 'valve-zone-accommodation-stbd',        side: 'stbd', pipe: 'pipe-zone-accommodation-stbd',   bilge: 'bilge-head-accommodation',        label: 'Accommodation',     default: false, flowReverse: false },
-  'fuel-compartment':     { id: 'valve-zone-fuel-compartment-stbd',     side: 'stbd', pipe: 'pipe-zone-fuel-stbd',            bilge: 'bilge-head-engine-room',          label: 'Fuel compartment',  default: false, flowReverse: false }
+  'engine-room-aft':   { id:'valve-zone-engine-room-aft-port',   side:'port', pipe:'pipe-zone-engine-room-aft',      bilge:'bilge-head-engine-room-aft', label:'Engine room aft',  default:true  },
+  'tiller-flat':       { id:'valve-zone-tiller-flat-port',       side:'port', pipe:'pipe-zone-tiller-flat',          bilge:'bilge-head-tiller-flat',     label:'Tiller flat',      default:false },
+  'engine-room-fwd':   { id:'valve-zone-engine-room-fwd-stbd',   side:'stbd', pipe:'pipe-zone-engine-room-fwd-stbd', bilge:'bilge-head-engine-room-fwd', label:'Engine room fwd',  default:true  },
+  'accommodation':     { id:'valve-zone-accommodation-stbd',     side:'stbd', pipe:'pipe-zone-accommodation-stbd',   bilge:'bilge-head-accommodation',   label:'Accommodation',    default:false },
+  'fuel-compartment':  { id:'valve-zone-fuel-compartment-stbd',  side:'stbd', pipe:'pipe-zone-fuel-stbd',            bilge:'bilge-head-engine-room',     label:'Fuel compartment', default:false }
 };
 
 const PUMPS = {
-  port: { id: 'pump-jabsco-port', threeway: 'valve-3way-port', sidePipe3way: 'pipe-3way-to-pump-port', sidePipePump: 'pipe-pump-to-hull-port', seacockPipe: 'pipe-seacock-port', label: 'Port' },
-  stbd: { id: 'pump-jabsco-stbd', threeway: 'valve-3way-stbd', sidePipe3way: 'pipe-3way-to-pump-stbd', sidePipePump: 'pipe-pump-to-hull-stbd', seacockPipe: 'pipe-seacock-stbd', label: 'Stbd' }
+  port: { id:'pump-jabsco-port', threeway:'valve-3way-port', sidePipe3way:'pipe-3way-to-pump-port', sidePipePump:'pipe-pump-to-hull-port', seacockPipe:'pipe-seacock-port', label:'Port' },
+  stbd: { id:'pump-jabsco-stbd', threeway:'valve-3way-stbd', sidePipe3way:'pipe-3way-to-pump-stbd', sidePipePump:'pipe-pump-to-hull-stbd', seacockPipe:'pipe-seacock-stbd', label:'Stbd' }
 };
 
-const CROSSOVER = { valveId: 'valve-crossover', pipeId: 'pipe-crossover' };
+const CROSSOVER = { valveId:'valve-crossover', pipeId:'pipe-crossover' };
 
-// Animation reverse flags. Adjust per-pipe if any visually run wrong direction.
 const PIPE_FLOW_REVERSE = {
   'pipe-zone-engine-room-aft':      false,
   'pipe-zone-tiller-flat':          false,
@@ -1330,26 +1185,29 @@ const PIPE_FLOW_REVERSE = {
   'pipe-zone-accommodation-stbd':   false,
   'pipe-zone-fuel-stbd':            false,
   'pipe-crossover':                 false,
-  'pipe-3way-to-pump-port':         true,   // path drawn from pump down; flow is up to pump
+  'pipe-3way-to-pump-port':         true,
   'pipe-3way-to-pump-stbd':         false,
-  'pipe-pump-to-hull-port':         true,   // flow goes pump -> hull (left)
+  'pipe-pump-to-hull-port':         true,
   'pipe-pump-to-hull-stbd':         false,
-  'pipe-seacock-port':              true,   // flow from sea (left) into 3-way
+  'pipe-seacock-port':              true,
   'pipe-seacock-stbd':              false
 };
 
-// ===== App state =====
 const state = {
   mode: 'explore',
-  zones: {},          // zone-key -> open bool
-  threeWay: { port: 'bilge', stbd: 'bilge' },   // bilge | fire
-  crossover: false,   // open?
-  pumps: { port: false, stbd: false },
+  zones: {},
+  threeWay: { port:'bilge', stbd:'bilge' },
+  crossover: false,
+  pumps: { port:false, stbd:false },
+  bilgeWater: {},
   drillScenario: null
 };
 
 function applyDefaults() {
-  for (const k in ZONES) state.zones[k] = ZONES[k].default;
+  for (const k in ZONES) {
+    state.zones[k] = ZONES[k].default;
+    state.bilgeWater[k] = true;
+  }
   state.threeWay.port = 'bilge';
   state.threeWay.stbd = 'bilge';
   state.crossover = false;
@@ -1357,45 +1215,52 @@ function applyDefaults() {
   state.pumps.stbd = false;
 }
 
-// ===== SVG helpers =====
 const svg = document.querySelector('.diagram');
-
+const SVGNS = 'http://www.w3.org/2000/svg';
 function $(id) { return svg.querySelector('#' + CSS.escape(id)); }
-
-function getPaths(groupId) {
-  const g = $(groupId);
-  if (!g) return [];
-  return Array.from(g.querySelectorAll('path'));
-}
-
+function getPaths(groupId) { const g = $(groupId); return g ? Array.from(g.querySelectorAll('path')) : []; }
 function getInnerPipeShape(pipeGroupId) {
   const g = $(pipeGroupId);
   if (!g) return null;
   return g.querySelector('polyline, path, line');
 }
 
-// ===== Render: valves =====
+// Snapshot original fill/stroke values so we can restore on close/off.
+// This lets the SVG's embedded styles drive baseline appearance — JS only paints on top.
+const ORIGINAL_STYLE = new WeakMap();
+function snapshot(el) {
+  if (ORIGINAL_STYLE.has(el)) return;
+  ORIGINAL_STYLE.set(el, {
+    fill:   el.getAttribute('fill'),
+    stroke: el.getAttribute('stroke')
+  });
+}
+function restoreOriginal(el) {
+  const o = ORIGINAL_STYLE.get(el);
+  if (!o) return;
+  if (o.fill === null) el.removeAttribute('fill'); else el.setAttribute('fill', o.fill);
+  if (o.stroke === null) el.removeAttribute('stroke'); else el.setAttribute('stroke', o.stroke);
+  el.removeAttribute('transform');
+}
+
+// ===== Valve rendering =====
 function renderZoneValve(key) {
   const cfg = ZONES[key];
   const paths = getPaths(cfg.id);
   if (paths.length < 3) return;
   const [bodyFill, bodyStroke, handle] = paths;
   bodyFill.classList.add('vbody');
+  [bodyFill, bodyStroke, handle].forEach(snapshot);
   const open = state.zones[key];
   if (open) {
-    bodyFill.setAttribute('fill', 'var(--valve-open-fill)');
-    bodyStroke.setAttribute('stroke', 'var(--valve-open-stroke)');
-    handle.setAttribute('fill', 'var(--valve-open-stroke)');
-    // Rotate handle 90deg around valve center
+    bodyFill.setAttribute('fill',    'var(--valve-open-fill)');
+    handle.setAttribute('fill',      'var(--valve-open-stroke)');
     const b = bodyFill.getBBox();
-    const cx = b.x + b.width / 2;
-    const cy = b.y + b.height / 2;
-    handle.setAttribute('transform', `rotate(90 ${cx} ${cy})`);
+    handle.setAttribute('transform', `rotate(90 ${b.x+b.width/2} ${b.y+b.height/2})`);
   } else {
-    bodyFill.setAttribute('fill', 'var(--valve-closed-fill)');
-    bodyStroke.setAttribute('stroke', 'var(--valve-closed-stroke)');
-    handle.setAttribute('fill', '#444449');
-    handle.removeAttribute('transform');
+    restoreOriginal(bodyFill);
+    restoreOriginal(bodyStroke);
+    restoreOriginal(handle);
   }
 }
 
@@ -1404,19 +1269,16 @@ function renderCrossover() {
   if (paths.length < 3) return;
   const [bodyFill, bodyStroke, handle] = paths;
   bodyFill.classList.add('vbody');
+  [bodyFill, bodyStroke, handle].forEach(snapshot);
   if (state.crossover) {
-    bodyFill.setAttribute('fill', 'var(--valve-open-fill)');
-    bodyStroke.setAttribute('stroke', 'var(--valve-open-stroke)');
-    handle.setAttribute('fill', 'var(--valve-open-stroke)');
+    bodyFill.setAttribute('fill',    'var(--valve-open-fill)');
+    handle.setAttribute('fill',      'var(--valve-open-stroke)');
     const b = bodyFill.getBBox();
-    const cx = b.x + b.width / 2;
-    const cy = b.y + b.height / 2;
-    handle.setAttribute('transform', `rotate(90 ${cx} ${cy})`);
+    handle.setAttribute('transform', `rotate(90 ${b.x+b.width/2} ${b.y+b.height/2})`);
   } else {
-    bodyFill.setAttribute('fill', 'var(--valve-closed-fill)');
-    bodyStroke.setAttribute('stroke', 'var(--valve-closed-stroke)');
-    handle.setAttribute('fill', '#444449');
-    handle.removeAttribute('transform');
+    restoreOriginal(bodyFill);
+    restoreOriginal(bodyStroke);
+    restoreOriginal(handle);
   }
 }
 
@@ -1426,60 +1288,72 @@ function renderThreeWay(side) {
   if (paths.length < 3) return;
   const [bodyFill, bodyStroke, handle] = paths;
   bodyFill.classList.add('vbody');
+  [bodyFill, bodyStroke, handle].forEach(snapshot);
   const mode = state.threeWay[side];
   if (mode === 'fire') {
-    bodyFill.setAttribute('fill', 'var(--valve-open-fill)');
-    bodyStroke.setAttribute('stroke', 'var(--valve-open-stroke)');
-    handle.setAttribute('fill', 'var(--valve-open-stroke)');
-    // Horizontal mirror around body center to swap L-shape direction
+    bodyFill.setAttribute('fill',    'var(--valve-open-fill)');
+    handle.setAttribute('fill',      'var(--valve-open-stroke)');
     const b = bodyFill.getBBox();
-    const cx = b.x + b.width / 2;
-    handle.setAttribute('transform', `matrix(-1 0 0 1 ${cx * 2} 0)`);
+    handle.setAttribute('transform', `matrix(-1 0 0 1 ${(b.x+b.width/2)*2} 0)`);
   } else {
-    bodyFill.setAttribute('fill', 'var(--valve-closed-fill)');
-    bodyStroke.setAttribute('stroke', 'var(--valve-closed-stroke)');
-    handle.setAttribute('fill', '#444449');
-    handle.removeAttribute('transform');
+    restoreOriginal(bodyFill);
+    restoreOriginal(bodyStroke);
+    restoreOriginal(handle);
   }
 }
 
-// ===== Render: pumps =====
 function renderPump(side) {
   const cfg = PUMPS[side];
   const g = $(cfg.id);
   if (!g) return;
-  // pump group has: outer pill, outer pill stroke, JABSCO text, inner pill, inner knob
-  // Find: the inner toggle pill (rounded rect ~40x19) and the knob (rounded rect ~11x11)
-  const rects = Array.from(g.querySelectorAll('rect'));
-  if (rects.length < 2) return;
-  // last two rects: pill bg, knob
-  const pillBg = rects[rects.length - 2];
-  const knob = rects[rects.length - 1];
-  pillBg.classList.add('pbody');
-
-  const on = state.pumps[side];
+  const pill     = g.querySelector('.pump-pill');
+  const knob     = g.querySelector('.pump-knob');
+  const labelOff = g.querySelector('.pump-label-off');
+  const labelOn  = g.querySelector('.pump-label-on');
+  if (!pill || !knob || !labelOff || !labelOn) return;
+  const slide = parseFloat(g.dataset.slide) || 0;
+  const on = !!state.pumps[side];
   if (on) {
-    pillBg.setAttribute('fill', '#D0F0D6');
+    pill.setAttribute('fill', '#D0F0D6');
     knob.setAttribute('fill', '#307838');
-    // Slide knob to the right side of pill
-    const pillX = parseFloat(pillBg.getAttribute('x'));
-    const pillW = parseFloat(pillBg.getAttribute('width'));
-    const knobW = parseFloat(knob.getAttribute('width'));
-    const newKnobX = pillX + pillW - knobW - 4;
-    knob.setAttribute('x', newKnobX);
+    knob.setAttribute('transform', `translate(${slide} 0)`);
+    labelOff.setAttribute('opacity', '0');
+    labelOn.setAttribute('opacity', '1');
   } else {
-    pillBg.setAttribute('fill', '#F0F0F5');
+    pill.setAttribute('fill', '#FFFFFF');
     knob.setAttribute('fill', '#C1C6CE');
-    // Reset knob to the left side
-    const pillX = parseFloat(pillBg.getAttribute('x'));
-    const newKnobX = pillX + 4;
-    knob.setAttribute('x', newKnobX);
+    knob.removeAttribute('transform');
+    labelOff.setAttribute('opacity', '1');
+    labelOn.setAttribute('opacity', '0');
   }
 }
 
-// ===== Flow overlays =====
-// For each pipe group, clone its inner shape into a sibling overlay we can colorize/animate.
+function renderBilgeHeads() {
+  for (const k in ZONES) {
+    const cfg = ZONES[k];
+    const g = $(cfg.bilge);
+    if (!g) continue;
+    const path = g.querySelector('path');
+    if (!path) continue;
+    snapshot(path);
+    const wet = state.bilgeWater[k];
+    if (wet) {
+      restoreOriginal(path);
+    } else {
+      path.setAttribute('fill', '#E5E5EA');
+      path.setAttribute('stroke', '#C1C6CE');
+    }
+  }
+}
+
+// ===== Flow layer =====
 function setupFlowOverlays() {
+  const flowLayer = document.createElementNS(SVGNS, 'g');
+  flowLayer.setAttribute('id', 'flow-layer');
+  const firstInteractive = svg.querySelector('[id^="valve-"], [id^="pump-"], [id^="bilge-head-"], [id^="hull-"]');
+  if (firstInteractive) firstInteractive.parentNode.insertBefore(flowLayer, firstInteractive);
+  else svg.appendChild(flowLayer);
+
   const pipeIds = [
     'pipe-zone-engine-room-aft','pipe-zone-tiller-flat',
     'pipe-zone-engine-room-fwd-stbd','pipe-zone-accommodation-stbd','pipe-zone-fuel-stbd',
@@ -1495,53 +1369,46 @@ function setupFlowOverlays() {
     overlay.setAttribute('class', 'flow-overlay');
     if (PIPE_FLOW_REVERSE[pid]) overlay.classList.add('reverse');
     overlay.id = pid + '__flow';
-    shape.parentNode.appendChild(overlay);
+    flowLayer.appendChild(overlay);
   });
 }
 
-function setPipeFlow(pipeId, state) {
-  // state: 'off' | 'ok' | 'err'
+function bringFlowToTop(pipeId) {
+  const flowLayer = svg.querySelector('#flow-layer');
+  const overlay = svg.querySelector('#' + CSS.escape(pipeId + '__flow'));
+  if (flowLayer && overlay && overlay.parentNode === flowLayer) flowLayer.appendChild(overlay);
+}
+
+function setPipeFlow(pipeId, mode) {
   const overlay = svg.querySelector('#' + CSS.escape(pipeId + '__flow'));
   if (!overlay) return;
-  overlay.classList.remove('active', 'error');
-  if (state === 'ok') overlay.classList.add('active');
-  else if (state === 'err') overlay.classList.add('active', 'error');
+  overlay.classList.remove('active','warning','error');
+  if (mode === 'off') return;
+  overlay.classList.add('active');
+  if (mode === 'warn') overlay.classList.add('warning');
+  if (mode === 'err')  overlay.classList.add('error');
+  bringFlowToTop(pipeId);
+  bringPipeToTop(pipeId);
+}
+
+function bringPipeToTop(pipeId) {
+  const pipeGroup = $(pipeId);
+  const flowLayer = svg.querySelector('#flow-layer');
+  if (pipeGroup && flowLayer && pipeGroup.parentNode === flowLayer.parentNode) {
+    flowLayer.parentNode.insertBefore(pipeGroup, flowLayer);
+  }
 }
 
 function clearAllFlows() {
-  svg.querySelectorAll('.flow-overlay').forEach(o => o.classList.remove('active','error'));
+  svg.querySelectorAll('.flow-overlay').forEach(o => o.classList.remove('active','warning','error'));
 }
 
-// ===== Bilge head water indicator =====
-function setBilgeHead(zoneKey, on, err) {
-  const cfg = ZONES[zoneKey];
-  const g = $(cfg.bilge);
-  if (!g) return;
-  const path = g.querySelector('path');
-  if (!path) return;
-  // bilge head is yellow when zone valve open (water at intake). Red when err.
-  if (err) path.setAttribute('fill', 'var(--flow-err)');
-  else if (on) path.setAttribute('fill', 'var(--bilge)');
-  else path.setAttribute('fill', 'var(--bilge)');
-  // Always yellow at intake. Pulse only when in drill target.
-}
-
-// ===== Solver: determine flow =====
-// Returns { perSide: { port: { mode, zonesActive[], error[], errorReasons[] }, stbd: {...} }, warnings: [] }
+// ===== Solver =====
 function solve() {
-  const result = {
-    pumps: { port: { active:false, mode:'off', zones:[], error:false, reasons:[] },
-             stbd: { active:false, mode:'off', zones:[], error:false, reasons:[] } },
-    warnings: []
-  };
+  const r = { pumps: { port:{}, stbd:{} }, alerts: [] };
+  const openByside = { port:[], stbd:[] };
+  for (const k in ZONES) if (state.zones[k]) openByside[ZONES[k].side].push(k);
 
-  // Open zones grouped by manifold side
-  const openByside = { port: [], stbd: [] };
-  for (const k in ZONES) {
-    if (state.zones[k]) openByside[ZONES[k].side].push(k);
-  }
-
-  // Crossover constraints (only enforced when crossover open AND a pump is running)
   const eitherPumpOn = state.pumps.port || state.pumps.stbd;
   const totalOpenZones = openByside.port.length + openByside.stbd.length;
   const fireOpen = (state.threeWay.port === 'fire') || (state.threeWay.stbd === 'fire');
@@ -1551,50 +1418,43 @@ function solve() {
     fireOpen
   );
 
-  if (state.crossover && state.pumps.port && state.pumps.stbd) {
-    result.warnings.push('Crossover open with both Jabsco pumps running. Only one pump may run at a time.');
-  }
-  if (state.crossover && totalOpenZones > 1 && eitherPumpOn) {
-    result.warnings.push('Crossover open with more than one zone valve open. Close all but one zone.');
-  }
-  if (state.crossover && fireOpen && eitherPumpOn) {
-    result.warnings.push('Crossover open with a 3-way in FIRE. Both 3-ways must be in BILGE when crossover is open.');
-  }
+  if (state.crossover && state.pumps.port && state.pumps.stbd)
+    r.alerts.push({ kind:'err', text:'Crossover open with both Jabsco pumps running. Only one pump may run with crossover.' });
+  if (state.crossover && totalOpenZones > 1 && eitherPumpOn)
+    r.alerts.push({ kind:'err', text:'Crossover open with multiple zone valves open. Close all but one zone.' });
+  if (state.crossover && fireOpen && eitherPumpOn)
+    r.alerts.push({ kind:'err', text:'Crossover open with a 3-way in FIRE. Both 3-ways must be in BILGE.' });
 
   ['port','stbd'].forEach(side => {
-    const r = result.pumps[side];
-    if (!state.pumps[side]) { r.mode = 'off'; return; }
-    r.active = true;
-    const twMode = state.threeWay[side];
-    if (twMode === 'fire') {
-      r.mode = 'fire';
-      // Fire mode draws from sea cock - always available
-      // No bilge needed
-      return;
-    }
-    // Bilge mode
-    r.mode = 'bilge';
-    let reachable = openByside[side].slice();
+    const p = r.pumps[side] = { active:false, mode:'off', reachable:[], wet:[], dry:[], state:'off' };
+    if (!state.pumps[side]) return;
+    p.active = true;
+    if (state.threeWay[side] === 'fire') { p.mode = 'fire'; p.state = 'ok'; return; }
+    p.mode = 'bilge';
+    let reach = openByside[side].slice();
     if (state.crossover && !crossoverViolation) {
-      reachable = reachable.concat(openByside[side === 'port' ? 'stbd' : 'port']);
+      reach = reach.concat(openByside[side === 'port' ? 'stbd' : 'port']);
     }
-    r.zones = reachable;
-    if (reachable.length === 0) {
-      r.error = true;
-      r.reasons.push(`${PUMPS[side].label} Jabsco is running dry: no zone valve open on its manifold.`);
-    }
-    if (crossoverViolation) {
-      r.error = true;
-    }
+    p.reachable = reach;
+    p.wet = reach.filter(z => state.bilgeWater[z]);
+    p.dry = reach.filter(z => !state.bilgeWater[z]);
+
+    if (crossoverViolation) p.state = 'err';
+    else if (reach.length === 0) {
+      p.state = 'err';
+      r.alerts.push({ kind:'err', text:`${PUMPS[side].label} Jabsco dead-heading: no zone valve open. Impeller damage imminent.` });
+    } else if (p.wet.length === 0) {
+      p.state = 'err';
+      r.alerts.push({ kind:'err', text:`${PUMPS[side].label} Jabsco running on air: all open compartments are dry. Impeller will burn out.` });
+    } else if (p.dry.length > 0) {
+      p.state = 'warn';
+      r.alerts.push({ kind:'warn', text:`${PUMPS[side].label} Jabsco sucking air through ${p.dry.map(z=>ZONES[z].label).join(' + ')}. Close dry zone valves; only open valves to compartments with water.` });
+    } else p.state = 'ok';
   });
 
-  if (result.pumps.port.error) result.warnings.push(...result.pumps.port.reasons);
-  if (result.pumps.stbd.error) result.warnings.push(...result.pumps.stbd.reasons);
-
-  return result;
+  return r;
 }
 
-// ===== Render flows from solve result =====
 function renderFlows() {
   clearAllFlows();
   const r = solve();
@@ -1603,68 +1463,68 @@ function renderFlows() {
     const p = r.pumps[side];
     if (!p.active) return;
     const cfg = PUMPS[side];
-    const err = p.error;
-    const flowState = err ? 'err' : 'ok';
 
     if (p.mode === 'fire') {
-      setPipeFlow(cfg.seacockPipe, flowState);
-      setPipeFlow(cfg.sidePipe3way, flowState);
-      setPipeFlow(cfg.sidePipePump, flowState);
+      setPipeFlow(cfg.seacockPipe,   'ok');
+      setPipeFlow(cfg.sidePipe3way,  'ok');
+      setPipeFlow(cfg.sidePipePump,  'ok');
+      return;
+    }
+
+    if (p.state === 'err') {
+      setPipeFlow(cfg.sidePipe3way, 'err');
+      setPipeFlow(cfg.sidePipePump, 'err');
+      p.dry.forEach(zk => setPipeFlow(ZONES[zk].pipe, 'err'));
+      p.wet.forEach(zk => setPipeFlow(ZONES[zk].pipe, 'warn'));
+    } else if (p.state === 'warn') {
+      p.wet.forEach(zk => setPipeFlow(ZONES[zk].pipe, 'ok'));
+      p.dry.forEach(zk => setPipeFlow(ZONES[zk].pipe, 'warn'));
+      setPipeFlow(cfg.sidePipe3way, 'warn');
+      setPipeFlow(cfg.sidePipePump, 'warn');
     } else {
-      // Bilge mode
-      if (p.zones.length === 0) {
-        // Pump running dry - draw red on the suction circuit
-        setPipeFlow(cfg.sidePipe3way, 'err');
-        setPipeFlow(cfg.sidePipePump, 'err');
-      } else {
-        // Active zones light up their zone pipes
-        p.zones.forEach(zk => setPipeFlow(ZONES[zk].pipe, flowState));
-        // 3-way to pump and pump to hull always carry the flow
-        setPipeFlow(cfg.sidePipe3way, flowState);
-        setPipeFlow(cfg.sidePipePump, flowState);
-        // Crossover lights up if any reachable zone is on opposite side
-        const oppositeZones = p.zones.filter(zk => ZONES[zk].side !== side);
-        if (oppositeZones.length > 0) {
-          setPipeFlow('pipe-crossover', flowState);
-        }
-      }
+      p.wet.forEach(zk => setPipeFlow(ZONES[zk].pipe, 'ok'));
+      setPipeFlow(cfg.sidePipe3way, 'ok');
+      setPipeFlow(cfg.sidePipePump, 'ok');
+    }
+
+    const oppZones = p.reachable.filter(zk => ZONES[zk].side !== side);
+    if (oppZones.length > 0) {
+      const flowState = p.state === 'err' ? 'err' : (p.state === 'warn' ? 'warn' : 'ok');
+      setPipeFlow('pipe-crossover', flowState);
     }
   });
-  updateStatusUI(r);
-  updateBilgeHeads();
-}
 
-function updateBilgeHeads() {
-  // Bilge heads stay yellow always (water present at intake). They show red if drill marks them as target & not yet handled.
-  // No-op for now; bilge heads have their own static color.
+  updateStatusUI(r);
+  updateAlertsUI(r);
 }
 
 function updateStatusUI(r) {
   ['port','stbd'].forEach(side => {
     const el = document.getElementById('status-' + side);
     const p = r.pumps[side];
-    el.className = 'state';
-    let cls = 'state-off';
-    let txt = 'Off';
+    let cls = 'state-off', txt = 'Off';
     if (p.active) {
-      if (p.error) { cls = 'state-err'; txt = 'DRY / FAULT'; }
-      else if (p.mode === 'fire') { cls = 'state-fire'; txt = 'FIRE pumping'; }
-      else { cls = 'state-ok'; txt = `Pumping ${p.zones.length === 1 ? ZONES[p.zones[0]].label.toLowerCase() : p.zones.length + ' zones'}`; }
+      if (p.state === 'err')       { cls='state-err';  txt='FAULT'; }
+      else if (p.state === 'warn') { cls='state-warn'; txt='Air-suck warning'; }
+      else if (p.mode === 'fire')  { cls='state-fire'; txt='FIRE pumping'; }
+      else { cls='state-ok'; txt = p.wet.length === 1 ? `Pumping ${ZONES[p.wet[0]].label.toLowerCase()}` : `Pumping ${p.wet.length} zones`; }
     }
-    el.classList.add(cls);
+    el.className = 'state ' + cls;
     el.querySelector('.text').textContent = txt;
   });
-  const wrap = document.getElementById('warnings');
+}
+
+function updateAlertsUI(r) {
+  const wrap = document.getElementById('alerts');
   wrap.innerHTML = '';
-  r.warnings.forEach(w => {
+  r.alerts.forEach(a => {
     const div = document.createElement('div');
-    div.className = 'warning';
-    div.appendChild(document.createTextNode(w));
+    div.className = 'alert ' + a.kind;
+    div.appendChild(document.createTextNode(a.text));
     wrap.appendChild(div);
   });
 }
 
-// ===== Render everything =====
 function renderAll() {
   for (const k in ZONES) renderZoneValve(k);
   renderCrossover();
@@ -1672,24 +1532,26 @@ function renderAll() {
   renderThreeWay('stbd');
   renderPump('port');
   renderPump('stbd');
+  renderBilgeHeads();
   renderFlows();
 }
 
-// ===== Interaction =====
 function wireClicks() {
   for (const k in ZONES) {
     const g = $(ZONES[k].id);
-    if (!g) continue;
-    g.addEventListener('click', () => {
-      state.zones[k] = !state.zones[k];
-      renderAll();
-    });
+    if (g) g.addEventListener('click', () => { state.zones[k] = !state.zones[k]; renderAll(); });
+    const bh = $(ZONES[k].bilge);
+    if (bh) {
+      bh.classList.add('bilge-clickable');
+      bh.addEventListener('click', () => {
+        if (state.mode === 'drill') return;
+        state.bilgeWater[k] = !state.bilgeWater[k];
+        renderAll();
+      });
+    }
   }
   const x = $(CROSSOVER.valveId);
-  if (x) x.addEventListener('click', () => {
-    state.crossover = !state.crossover;
-    renderAll();
-  });
+  if (x) x.addEventListener('click', () => { state.crossover = !state.crossover; renderAll(); });
   ['port','stbd'].forEach(side => {
     const tw = $(PUMPS[side].threeway);
     if (tw) tw.addEventListener('click', () => {
@@ -1697,107 +1559,86 @@ function wireClicks() {
       renderAll();
     });
     const pump = $(PUMPS[side].id);
-    if (pump) pump.addEventListener('click', () => {
-      state.pumps[side] = !state.pumps[side];
-      renderAll();
-    });
+    if (pump) pump.addEventListener('click', () => { state.pumps[side] = !state.pumps[side]; renderAll(); });
   });
 }
 
-// ===== Drill mode =====
 const DRILL_SCENARIOS = [
-  {
-    id: 'flooding-tiller',
-    brief: 'Flooding in the tiller flat. Configure to pump.',
+  { id:'flooding-tiller', brief:'Flooding in the tiller flat. Configure to pump.', flooded:['tiller-flat'],
     check: () => {
-      const ok = state.pumps.port && state.zones['tiller-flat'] && state.threeWay.port === 'bilge';
       const reasons = [];
       if (!state.pumps.port) reasons.push('Port Jabsco not running.');
       if (!state.zones['tiller-flat']) reasons.push('Tiller flat zone valve closed.');
-      if (state.threeWay.port !== 'bilge') reasons.push('Port 3-way in FIRE.');
-      return { ok, reasons };
+      if (state.threeWay.port !== 'bilge') reasons.push('Port 3-way must be in BILGE.');
+      const others = Object.keys(ZONES).filter(z => z !== 'tiller-flat' && state.zones[z]);
+      if (others.length) reasons.push('Close ' + others.map(z => ZONES[z].label).join(', ') + ' (dry).');
+      return { ok: reasons.length === 0, reasons };
     }
   },
-  {
-    id: 'flooding-accommodation',
-    brief: 'Flooding in the accommodation. Configure to pump.',
+  { id:'flooding-accommodation', brief:'Flooding in the accommodation. Configure to pump.', flooded:['accommodation'],
     check: () => {
-      const ok = state.pumps.stbd && state.zones['accommodation'] && state.threeWay.stbd === 'bilge';
       const reasons = [];
       if (!state.pumps.stbd) reasons.push('Stbd Jabsco not running.');
       if (!state.zones['accommodation']) reasons.push('Accommodation zone valve closed.');
-      if (state.threeWay.stbd !== 'bilge') reasons.push('Stbd 3-way in FIRE.');
-      return { ok, reasons };
+      if (state.threeWay.stbd !== 'bilge') reasons.push('Stbd 3-way must be in BILGE.');
+      const others = Object.keys(ZONES).filter(z => z !== 'accommodation' && state.zones[z]);
+      if (others.length) reasons.push('Close ' + others.map(z => ZONES[z].label).join(', ') + ' (dry).');
+      return { ok: reasons.length === 0, reasons };
     }
   },
-  {
-    id: 'flooding-fuel',
-    brief: 'Flooding in the fuel compartment. Configure to pump.',
+  { id:'flooding-fuel', brief:'Flooding in the fuel compartment. Configure to pump.', flooded:['fuel-compartment'],
     check: () => {
-      const ok = state.pumps.stbd && state.zones['fuel-compartment'] && state.threeWay.stbd === 'bilge';
       const reasons = [];
       if (!state.pumps.stbd) reasons.push('Stbd Jabsco not running.');
       if (!state.zones['fuel-compartment']) reasons.push('Fuel compartment zone valve closed.');
-      if (state.threeWay.stbd !== 'bilge') reasons.push('Stbd 3-way in FIRE.');
-      return { ok, reasons };
+      if (state.threeWay.stbd !== 'bilge') reasons.push('Stbd 3-way must be in BILGE.');
+      const others = Object.keys(ZONES).filter(z => z !== 'fuel-compartment' && state.zones[z]);
+      if (others.length) reasons.push('Close ' + others.map(z => ZONES[z].label).join(', ') + ' (dry).');
+      return { ok: reasons.length === 0, reasons };
     }
   },
-  {
-    id: 'fire-aside',
-    brief: 'Vessel alongside, fire on deck. Configure both Jabsco for firefighting.',
+  { id:'fire-aside', brief:'Vessel alongside, fire on deck. Configure both Jabsco for firefighting.', flooded:[],
     check: () => {
-      const ok = state.pumps.port && state.pumps.stbd
-              && state.threeWay.port === 'fire' && state.threeWay.stbd === 'fire'
-              && !state.crossover;
       const reasons = [];
       if (!state.pumps.port) reasons.push('Port Jabsco not running.');
       if (!state.pumps.stbd) reasons.push('Stbd Jabsco not running.');
-      if (state.threeWay.port !== 'fire') reasons.push('Port 3-way still in BILGE.');
-      if (state.threeWay.stbd !== 'fire') reasons.push('Stbd 3-way still in BILGE.');
-      if (state.crossover) reasons.push('Crossover must be closed in FIRE.');
-      return { ok, reasons };
+      if (state.threeWay.port !== 'fire') reasons.push('Port 3-way must be in FIRE.');
+      if (state.threeWay.stbd !== 'fire') reasons.push('Stbd 3-way must be in FIRE.');
+      if (state.crossover) reasons.push('Crossover must be closed in FIRE mode.');
+      return { ok: reasons.length === 0, reasons };
     }
   },
-  {
-    id: 'port-pump-fail',
-    brief: 'Engine room flooding, port Jabsco failed. Use stbd pump only via crossover.',
+  { id:'port-pump-fail', brief:'Engine room flooding. Port Jabsco failed. Use stbd pump via crossover.', flooded:['engine-room-aft','engine-room-fwd'],
     check: () => {
-      const ok = !state.pumps.port && state.pumps.stbd
-              && state.zones['engine-room-aft']
-              && !state.zones['engine-room-fwd'] && !state.zones['accommodation'] && !state.zones['fuel-compartment'] && !state.zones['tiller-flat']
-              && state.crossover
-              && state.threeWay.stbd === 'bilge';
       const reasons = [];
       if (state.pumps.port) reasons.push('Port Jabsco must be off (failed).');
       if (!state.pumps.stbd) reasons.push('Stbd Jabsco not running.');
       if (!state.crossover) reasons.push('Crossover must be open to reach port manifold.');
-      if (!state.zones['engine-room-aft']) reasons.push('Engine room aft zone valve must be open.');
+      if (!state.zones['engine-room-aft']) reasons.push('Engine room aft must be open.');
       const otherZones = ['engine-room-fwd','accommodation','fuel-compartment','tiller-flat'].filter(z => state.zones[z]);
       if (otherZones.length) reasons.push('Only one zone valve may be open with crossover.');
       if (state.threeWay.stbd !== 'bilge') reasons.push('Stbd 3-way must be in BILGE.');
-      return { ok, reasons };
+      return { ok: reasons.length === 0, reasons };
     }
   },
-  {
-    id: 'engine-room-both',
-    brief: 'Engine room flooding heavily. Use both Jabsco at maximum flow.',
+  { id:'engine-room-both', brief:'Engine room flooding heavily. Use both Jabsco at maximum flow.', flooded:['engine-room-aft','engine-room-fwd'],
     check: () => {
-      const ok = state.pumps.port && state.pumps.stbd
-              && state.zones['engine-room-aft'] && state.zones['engine-room-fwd']
-              && state.threeWay.port === 'bilge' && state.threeWay.stbd === 'bilge'
-              && !state.crossover;
       const reasons = [];
       if (!state.pumps.port) reasons.push('Port Jabsco not running.');
       if (!state.pumps.stbd) reasons.push('Stbd Jabsco not running.');
       if (!state.zones['engine-room-aft']) reasons.push('Engine room aft valve closed.');
       if (!state.zones['engine-room-fwd']) reasons.push('Engine room fwd valve closed.');
-      if (state.threeWay.port !== 'bilge') reasons.push('Port 3-way in FIRE.');
-      if (state.threeWay.stbd !== 'bilge') reasons.push('Stbd 3-way in FIRE.');
+      if (state.threeWay.port !== 'bilge') reasons.push('Port 3-way must be in BILGE.');
+      if (state.threeWay.stbd !== 'bilge') reasons.push('Stbd 3-way must be in BILGE.');
       if (state.crossover) reasons.push('Crossover must be closed when both pumps run.');
-      return { ok, reasons };
+      const extras = ['accommodation','fuel-compartment','tiller-flat'].filter(z => state.zones[z]);
+      if (extras.length) reasons.push('Close ' + extras.map(z => ZONES[z].label).join(', ') + ' (dry compartments).');
+      return { ok: reasons.length === 0, reasons };
     }
   }
 ];
+
+function applyScenarioBilge(scenario) { for (const k in ZONES) state.bilgeWater[k] = scenario.flooded.includes(k); }
 
 function pickRandomScenario() {
   let pick;
@@ -1806,6 +1647,7 @@ function pickRandomScenario() {
   state.drillScenario = pick;
   document.getElementById('drill-brief').textContent = pick.brief;
   document.getElementById('drill-result').classList.remove('show','pass','fail');
+  applyScenarioBilge(pick);
 }
 
 function setMode(m) {
@@ -1814,15 +1656,10 @@ function setMode(m) {
   document.getElementById('mode-drill').classList.toggle('active', m === 'drill');
   document.getElementById('drill-panel').classList.toggle('show', m === 'drill');
   document.getElementById('btn-newdrill').style.display = m === 'drill' ? 'inline-flex' : 'none';
-  if (m === 'drill') {
-    applyDefaults();
-    pickRandomScenario();
-    renderAll();
-  } else {
-    state.drillScenario = null;
-    applyDefaults();
-    renderAll();
-  }
+  applyDefaults();
+  if (m === 'drill') pickRandomScenario();
+  else state.drillScenario = null;
+  renderAll();
 }
 
 function checkDrill() {
@@ -1831,25 +1668,18 @@ function checkDrill() {
   const el = document.getElementById('drill-result');
   el.classList.remove('pass','fail');
   el.classList.add('show');
-  if (r.ok) {
-    el.classList.add('pass');
-    el.textContent = 'Correct';
-  } else {
-    el.classList.add('fail');
-    el.textContent = r.reasons[0] || 'Configuration incorrect';
-  }
+  if (r.ok) { el.classList.add('pass'); el.textContent = 'Correct'; }
+  else      { el.classList.add('fail'); el.textContent = r.reasons[0] || 'Configuration incorrect'; }
 }
 
-// ===== Boot =====
 function init() {
   setupFlowOverlays();
   applyDefaults();
   wireClicks();
   renderAll();
-
   document.getElementById('mode-explore').addEventListener('click', () => setMode('explore'));
   document.getElementById('mode-drill').addEventListener('click',   () => setMode('drill'));
-  document.getElementById('btn-reset').addEventListener('click', () => { applyDefaults(); renderAll(); });
+  document.getElementById('btn-reset').addEventListener('click', () => { applyDefaults(); if (state.drillScenario) applyScenarioBilge(state.drillScenario); renderAll(); });
   document.getElementById('btn-newdrill').addEventListener('click', () => { applyDefaults(); pickRandomScenario(); renderAll(); });
   document.getElementById('btn-check').addEventListener('click', checkDrill);
 }
