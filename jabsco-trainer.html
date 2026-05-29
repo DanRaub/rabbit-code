@@ -1471,26 +1471,38 @@ function renderFlows() {
       return;
     }
 
-    if (p.state === 'err') {
+    // Discharge pipe always reflects the active pump's state — water exits here.
+    setPipeFlow(cfg.sidePipePump, p.state);
+
+    // Dead-heading: no reachable zones at all. Light active pump's own suction
+    // pipe in error to make the starved-pump cue obvious near the impeller.
+    if (p.reachable.length === 0) {
       setPipeFlow(cfg.sidePipe3way, 'err');
-      setPipeFlow(cfg.sidePipePump, 'err');
-      p.dry.forEach(zk => setPipeFlow(ZONES[zk].pipe, 'err'));
-      p.wet.forEach(zk => setPipeFlow(ZONES[zk].pipe, 'warn'));
-    } else if (p.state === 'warn') {
-      p.wet.forEach(zk => setPipeFlow(ZONES[zk].pipe, 'ok'));
-      p.dry.forEach(zk => setPipeFlow(ZONES[zk].pipe, 'warn'));
-      setPipeFlow(cfg.sidePipe3way, 'warn');
-      setPipeFlow(cfg.sidePipePump, 'warn');
-    } else {
-      p.wet.forEach(zk => setPipeFlow(ZONES[zk].pipe, 'ok'));
-      setPipeFlow(cfg.sidePipe3way, 'ok');
-      setPipeFlow(cfg.sidePipePump, 'ok');
+      return;
     }
 
-    const oppZones = p.reachable.filter(zk => ZONES[zk].side !== side);
-    if (oppZones.length > 0) {
-      const flowState = p.state === 'err' ? 'err' : (p.state === 'warn' ? 'warn' : 'ok');
-      setPipeFlow('pipe-crossover', flowState);
+    // Individual zone-to-manifold pipes
+    const wetState = (p.state === 'err') ? 'warn' : 'ok';
+    const dryState = (p.state === 'err') ? 'err'  : 'warn';
+    p.wet.forEach(zk => setPipeFlow(ZONES[zk].pipe, wetState));
+    p.dry.forEach(zk => setPipeFlow(ZONES[zk].pipe, dryState));
+
+    // Each side's 3-way-to-pump pipe lights up ONLY if that side actually has
+    // reachable zones feeding the suction. In a crossover-only draw (active
+    // pump's own side has no open valves) the active side's 3way-to-pump
+    // stays dark — water enters via the opposite side's manifold.
+    ['port','stbd'].forEach(s => {
+      const sideHasZones = p.reachable.some(zk => ZONES[zk].side === s);
+      if (!sideHasZones) return;
+      const pipeId = PUMPS[s].sidePipe3way;
+      setPipeFlow(pipeId, p.state);
+    });
+
+    // Crossover pipe lights up whenever water has to traverse it — i.e. any
+    // reachable zone sits on the opposite side from the active pump.
+    const usesCrossover = p.reachable.some(zk => ZONES[zk].side !== side);
+    if (usesCrossover) {
+      setPipeFlow('pipe-crossover', p.state);
     }
   });
 
@@ -1570,7 +1582,9 @@ const DRILL_SCENARIOS = [
       if (!state.pumps.port) reasons.push('Port Jabsco not running.');
       if (!state.zones['tiller-flat']) reasons.push('Tiller flat zone valve closed.');
       if (state.threeWay.port !== 'bilge') reasons.push('Port 3-way must be in BILGE.');
-      const others = Object.keys(ZONES).filter(z => z !== 'tiller-flat' && state.zones[z]);
+      // With crossover shut, stbd is hydraulically isolated — only flag port-side open zones.
+      const sideMatters = z => state.crossover || ZONES[z].side === 'port';
+      const others = Object.keys(ZONES).filter(z => z !== 'tiller-flat' && state.zones[z] && sideMatters(z));
       if (others.length) reasons.push('Close ' + others.map(z => ZONES[z].label).join(', ') + ' (dry).');
       return { ok: reasons.length === 0, reasons };
     }
@@ -1581,7 +1595,8 @@ const DRILL_SCENARIOS = [
       if (!state.pumps.stbd) reasons.push('Stbd Jabsco not running.');
       if (!state.zones['accommodation']) reasons.push('Accommodation zone valve closed.');
       if (state.threeWay.stbd !== 'bilge') reasons.push('Stbd 3-way must be in BILGE.');
-      const others = Object.keys(ZONES).filter(z => z !== 'accommodation' && state.zones[z]);
+      const sideMatters = z => state.crossover || ZONES[z].side === 'stbd';
+      const others = Object.keys(ZONES).filter(z => z !== 'accommodation' && state.zones[z] && sideMatters(z));
       if (others.length) reasons.push('Close ' + others.map(z => ZONES[z].label).join(', ') + ' (dry).');
       return { ok: reasons.length === 0, reasons };
     }
@@ -1592,7 +1607,8 @@ const DRILL_SCENARIOS = [
       if (!state.pumps.stbd) reasons.push('Stbd Jabsco not running.');
       if (!state.zones['fuel-compartment']) reasons.push('Fuel compartment zone valve closed.');
       if (state.threeWay.stbd !== 'bilge') reasons.push('Stbd 3-way must be in BILGE.');
-      const others = Object.keys(ZONES).filter(z => z !== 'fuel-compartment' && state.zones[z]);
+      const sideMatters = z => state.crossover || ZONES[z].side === 'stbd';
+      const others = Object.keys(ZONES).filter(z => z !== 'fuel-compartment' && state.zones[z] && sideMatters(z));
       if (others.length) reasons.push('Close ' + others.map(z => ZONES[z].label).join(', ') + ' (dry).');
       return { ok: reasons.length === 0, reasons };
     }
