@@ -1017,7 +1017,7 @@ function applyDefaults() {
 
 const svg = document.querySelector('.diagram');
 const SVGNS = 'http://www.w3.org/2000/svg';
-function $(id) { return svg.querySelector('#' + CSS.escape(id)); }
+function $(id) { return document.getElementById(id); }
 function getPaths(groupId) { const g = $(groupId); return g ? Array.from(g.querySelectorAll('path')) : []; }
 function getInnerPipeShape(pipeGroupId) {
   const g = $(pipeGroupId);
@@ -1175,12 +1175,12 @@ function setupFlowOverlays() {
 
 function bringFlowToTop(pipeId) {
   const flowLayer = svg.querySelector('#flow-layer');
-  const overlay = svg.querySelector('#' + CSS.escape(pipeId + '__flow'));
+  const overlay = document.getElementById(pipeId + '__flow');
   if (flowLayer && overlay && overlay.parentNode === flowLayer) flowLayer.appendChild(overlay);
 }
 
 function setPipeFlow(pipeId, mode) {
-  const overlay = svg.querySelector('#' + CSS.escape(pipeId + '__flow'));
+  const overlay = document.getElementById(pipeId + '__flow');
   if (!overlay) return;
   overlay.classList.remove('active','warning','error');
   if (mode === 'off') return;
