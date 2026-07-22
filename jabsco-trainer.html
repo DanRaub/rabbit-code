@@ -938,20 +938,43 @@ const PUMPS = {
 
 const CROSSOVER = { valveId:'valve-crossover', pipeId:'pipe-crossover' };
 
-const PIPE_FLOW_REVERSE = {
-  'pipe-zone-engine-room-aft':      false,
-  'pipe-zone-tiller-flat':          false,
-  'pipe-zone-engine-room-fwd-stbd': false,
-  'pipe-zone-accommodation-stbd':   false,
-  'pipe-zone-fuel-stbd':            false,
-  'pipe-crossover':                 false,
-  'pipe-3way-to-pump-port':         true,
-  'pipe-3way-to-pump-stbd':         false,
-  'pipe-pump-to-hull-port':         true,
-  'pipe-pump-to-hull-stbd':         false,
-  'pipe-seacock-port':              true,
-  'pipe-seacock-stbd':              false
+// Every pipe's flow direction is DERIVED, not declared. For each pipe we name
+// the point water must travel TOWARD; at setup we measure which end of the
+// drawn path sits nearer that point. If the path was drawn against the flow,
+// the overlay gets .reverse. This makes it impossible for a hand-typed flag to
+// disagree with the artwork.
+const FLOW_TARGET = {
+  // suction side: bilge head -> that side's 3-way manifold
+  'pipe-zone-engine-room-aft':      [ 44.7, 633.1],
+  'pipe-zone-tiller-flat':          [ 44.7, 633.1],
+  'pipe-zone-engine-room-fwd-stbd': [336.0, 532.1],
+  'pipe-zone-accommodation-stbd':   [336.0, 532.1],
+  'pipe-zone-fuel-stbd':            [336.0, 532.1],
+  // sea intake -> 3-way manifold (fire mode)
+  'pipe-seacock-port':              [ 44.7, 633.1],
+  'pipe-seacock-stbd':              [336.0, 532.1],
+  // 3-way manifold -> pump
+  'pipe-3way-to-pump-port':         [ 89.1, 572.1],
+  'pipe-3way-to-pump-stbd':         [297.9, 685.8],
+  // pump -> red hull discharge. Water NEVER travels the other way.
+  'pipe-pump-to-hull-port':         [ 11.0, 572.8],
+  'pipe-pump-to-hull-stbd':         [370.4, 633.3]
+  // 'pipe-crossover' is deliberately absent: its direction depends on which
+  // pump is drawing, so it is set per-render in renderFlows().
 };
+
+function pathRunsAgainstFlow(shape, target) {
+  if (!target || typeof shape.getPointAtLength !== 'function') return false;
+  let a, b;
+  try {
+    a = shape.getPointAtLength(0);
+    b = shape.getPointAtLength(shape.getTotalLength());
+  } catch (e) { return false; }
+  const d2 = p => (p.x - target[0]) * (p.x - target[0]) + (p.y - target[1]) * (p.y - target[1]);
+  // If the path STARTS nearer the destination, it was drawn backwards.
+  return d2(a) < d2(b);
+}
+
 
 const state = {
   mode: 'explore',
@@ -1127,7 +1150,7 @@ function setupFlowOverlays() {
     const overlay = shape.cloneNode(true);
     overlay.removeAttribute('class');
     overlay.setAttribute('class', 'flow-overlay');
-    if (PIPE_FLOW_REVERSE[pid]) overlay.classList.add('reverse');
+    if (pathRunsAgainstFlow(shape, FLOW_TARGET[pid])) overlay.classList.add('reverse');
     overlay.id = pid + '__flow';
     flowLayer.appendChild(overlay);
   });
@@ -1139,10 +1162,13 @@ function bringFlowToTop(pipeId) {
   if (flowLayer && overlay && overlay.parentNode === flowLayer) flowLayer.appendChild(overlay);
 }
 
-function setPipeFlow(pipeId, mode) {
+function setPipeFlow(pipeId, mode, reverse) {
   const overlay = svg.querySelector('#' + CSS.escape(pipeId + '__flow'));
   if (!overlay) return;
   overlay.classList.remove('active','warning','error');
+  // Optional per-render direction override (used by the crossover, whose
+  // direction depends on which pump is drawing).
+  if (typeof reverse === 'boolean') overlay.classList.toggle('reverse', reverse);
   if (mode === 'off') return;
   overlay.classList.add('active');
   if (mode === 'warn') overlay.classList.add('warning');
@@ -1262,7 +1288,9 @@ function renderFlows() {
     // reachable zone sits on the opposite side from the active pump.
     const usesCrossover = p.reachable.some(zk => ZONES[zk].side !== side);
     if (usesCrossover) {
-      setPipeFlow('pipe-crossover', p.state);
+      // Crossover is drawn port-pump -> stbd-pump. Water always travels toward
+      // the pump that is drawing, so a port-side draw runs the pipe in reverse.
+      setPipeFlow('pipe-crossover', p.state, side === 'port');
     }
   });
 
@@ -1449,6 +1477,10 @@ function checkDrill() {
 }
 
 function init() {
+  // Version marker. Uses no logging API: some host pages stub those objects,
+  // and calling a missing method here would abort init() before setup runs.
+  window.__JABSCO_TRAINER_VERSION__ = 'v3-geometric';
+  if (svg) svg.setAttribute('data-flow-model', 'v3-geometric');
   setupFlowOverlays();
   applyDefaults();
   wireClicks();
